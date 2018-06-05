@@ -1,0 +1,450 @@
+/* Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+ *                           Blue Brain Project and
+ *                          Universidad Politécnica de Madrid (UPM)
+ *                          Juan Hernando <juan.hernando@epfl.ch>
+ *
+ * This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/**
+
+\htmlonly
+<style type="text/css" media="screen, projection">
+#note {
+    position: relative;
+}
+#note span {
+    display: none;
+}
+#note a span {
+    display: none;
+    color: #FFFFFF;
+}
+#note a span span {
+    display: none;
+}
+#note a:hover span span {
+    display: none;
+}
+#note a:hover span {
+    display: block;
+    position: absolute;
+    width: 20em;
+    background-color: #aaa;
+    left: -21em;
+    top: -5px;
+    color: #FFFFFF;
+    padding: 5px;
+}
+
+pre {
+    padding: 0.5em;
+    border: 1px dashed #2f6fab;
+    color: black;
+    background-color: #f9f9f9;
+    line-height: 1em;
+}
+</style>
+\endhtmlonly
+
+\page advanced Advanced usage and recipes
+
+\section stereo Stereoscopic rendering
+
+\section levels_of_detail Levels of detail
+
+\subsection available_lods Level of detail representations
+
+RTNeuron implements five levels of detail (LOD) for neurons that can be
+combined to configure the representation to use for neurons at different
+distances.
+
+These models are:
+- **Spheres for somas**: Perfect spheres are rendered efficiently using a
+ray-casting algorithm. This algorithm scales well to several millions of
+neurons. As a drawback, driver-based antialiasing does not work due to the
+raycast implementation.
+\image html lod_soma.png Ray-cast sphere, the lowest level of detail for somas.
+- **Detailed mesh for somas**: \anchor detailed_soma_mesh Extracted from the
+detailed polygonal mesh, this model includes the soma and initial portion of
+all the first order branches.  Using this representation for somas implies
+loading the full mesh of the neuron. Note that the mesh is not deallocated
+after extracting the cell core.
+\image html lod_detailed_soma.png Detailed soma geometry extracted from the polygonal mesh.
+- **Detailed mesh**: In this representation the fully detailed polygonal mesh is
+used to represent the whole neuron membrane.
+\image html lod_mesh.png Detailed polygonal mesh.
+- **Pseudo-cylinders**: This is a simple full neuron geometrical model that uses
+camera oriented quadrilaterals shaded to give an impression of
+generalized cylinders when seen from a distance. This model exhibits
+artifacts at branches that are orthogonal to the camera plane, but looks
+fine for models to be fit within a regular screen. This model can be extracted
+directly from the morphological skeletons.
+Pseudo cylinders can be rendered using two different tessellation levels.
+The higher detail version is a direct conversion of each morphological segment
+into a piece of geometry. This one is intended for detailed somas, but can
+also be used with spherical somas. By default, the model construction process
+tries to extract the cell core and connect the first order branches to the
+point in which they finish in the \link detailed_soma_mesh detailed soma
+model\endlink. If the mesh is not available or the scene has been created
+requesting not to load meshes, the first order branches start from the surface
+of the spherical soma.  The lower detail version is obtained by subsampling
+the morphology skeleton and it is intended to be used in combination with
+spherical somas.
+<table class="collapsed_table">
+<tr>
+<td>\image html lod_low_cylinders.png Low detail pseudo-cylinders with spherical soma</td>
+<td>\image html lod_cylinders.png High detail pseudo-cylinders with detailed soma</td>
+<td>\image html lod_cylinders_no_mesh.png High detail pseudo-cylinders with spherical soma</td>
+</tr>
+</table>
+Pseudo-cylinders can be shaded using two different techniques that offer
+different performance and visual results.
+- **Tubelets**: This model uses spherically capped cone frusta, called tubelets,
+to represent the segments that form the neuronal skeleton. The tubelets
+are rendered using a ray-cast algorithm that only requires the end points and
+radii of each segment\htmlonly<span id="note"><a><sup>note</sup><span id="right"><span>(</span>
+Some additional information directly derived from the morphological skeleton is
+also needed for smooth shading and artifact-free transparent tubelets.
+<span>)</span></span></a></span>\endhtmlonly. Two different shading methods
+are provided. The default one shades each tubelet independently. The second
+one interpolates the surface normals to smooth the boundary between segments;
+this shading style is enabled setting <code>smooth_tublets</code> to true in the
+AttributeMap passed to \link bbp::rtneuron::RTNeuron::createScene
+RTNeuron.createScene\endlink. Driver based antialiasing does not work in this
+representation due to the raycasting implementation.
+If the neuron mesh is available, the first order branches start from the points
+where they end in the \link detailed_soma_mesh detailed soma \endlink (so both
+models are combined). If the mesh is not available or the scene has been
+created requesting not to load meshes, the first order branches start from the
+surface of the spherical soma.
+<table class="collapsed_table">
+<tr>
+<td>\image html lod_tubelets.png Tubelets with detailed soma.</td>
+<td>\image html lod_sharp_tubelets.png Close-up of the default tubelet shading.</td>
+<td>\image html lod_smooth_tubelets.png Close-up of the smooth tubelet shading.</td>
+</tr>
+</table>
+
+All the models for whole morphologies support view frustum culling and branch
+order culling. More details on both techniques are given in \ref culling.
+
+\subsection configuring_lods Working with levels of detail.
+
+What LODs to use when building the representation of a neuron is a property
+of \link bbp::rtneuron::Scene Scenes\endlink, while which models to choose to
+render a neuron from a given viewpoint is the combination of \link bbp::rtneuron::View View\endlink and \link bbp::rtneuron::Scene Scene\endlink properties.
+
+\subsubsection static_lods Specifying levels of detail.
+
+When a scene is created manually, it is possible to provide a LOD specification
+as part of the attribute map that holds the scene parameters. The LOD
+specification is itself an AttributeMap where the keys and the values are a
+pair of floating point numbers in the range [0, 1]. This interval is used to
+decide if a given LOD is visible or not depending on the screen resolution,
+bounding box of the neuron and its distance to the camera. Smaller values
+are used when the bounding box projects to a small area on the screen, while
+higher values are used for large projections (the actual formula used to
+select if a LOD is visible is an implementation detail and it is subject to
+change).
+
+An example of manual setup of the LOD specification is given below:
+  \code{.py}
+  # LOD specification that mimics the behavior of --no-lod
+  $ attributes = AttributeMap()
+  $ attributes.lod = AttributeMap()
+  $ attributes.lod.neurons = AttributeMap()
+  $ attributes.lod.neurons.mesh = [0, 1]
+  ...
+  $ scene = app.createScene(attributes)
+  \endcode
+
+For automatic scenes RTNeuron creates a default LOD specification based on
+the command line options and provides it to the scene construction. Section
+\ref default_lods provide details about it.
+
+\note Automatic scenes are those created by RTNeuron when using
+<code>display_circuit</code> inside the shell or loading a circuit from the
+command line with the options <code>-b</code>, <code>--target</code>,
+<code>--neurons</code>, and <code>-n (--neuron)</code>. Manual scenes are
+those created using \link bbp::rtneuron::RTNeuron::createScene
+RTNeuron.createScene\endlink and assigning the \link bbp::rtneuron::Scene Scene
+\endlink manually to a \link bbp::rtneuron::View View\endlink.
+Scenes parameters are specified using the AttributeMap passed to \link
+bbp::rtneuron::RTNeuron::createScene RTNeuron.createScene\endlink.
+
+The environmental variable RTNEURON_LOD_CONFIG_FILE can be set to point to a
+file that contains a LOD specification to use for automatic scenes. The file
+may contain a LOD definition per line using this format: <code>lod_name
+start end</code>. Lines starting with \# are ignored. The valid LOD names are
+the same as those used in the scene attribute map and the start and end values
+are also numbers between 0 and 1:
+  \code
+  # Example LOD config file
+  low_detail_cylinders 0.0 0.5
+  spherical_soma       0.0 0.5
+  detailed_soma        0.5 1.0
+  tubelets             0.5 1.0
+  \endcode
+
+\paragraph avoiding_meshes Avoiding meshes
+To avoid loading meshes, use <code>--no-meshes</code> for automatic scenes
+or set <code>use_meshes</code> to false in the attribute map passed to
+\link bbp::rtneuron::RTNeuron::createScene RTNeuron.createScene\endlink.
+If meshes are not loaded, the detailed soma model is neither available,
+and tubelet and pseudo-cylinder first order branches always start from the
+spherical soma.
+
+\paragraph enabling_tubelets Enabling tubelets
+
+Tubelets can be enabled with the command line option <code>--use-tubelets.</code>
+If provided, the automatic level of detail configuration will replace
+all references to high detail pseudo-cylinders with tubelets. This option
+has no effect if <code>--no-lod</code> or <code>--clod</code> are given.
+
+\paragraph clod Continuous level of detail
+
+RTNeuron supports a simple implementation of continuous level of detail (CLOD)
+based on the combination of pseudocylinders and tubelets. The basis of the
+method is to render both models at the same time and for each morphological
+segment choose whether to use one model or the other at the geometry
+processing stage of the GPU pipeline. The selection is based on the thickness
+of the segment and its distance to the camera.
+
+This is an experimental feature and its performance advantage has not been
+evaluated yet, however it provides a convenient way of rendering circuits
+without meshes having an acceptable result for close ups.
+
+To enable CLOD for automatic scenes pass <code>--clod</code> in the command
+line. For manual scenes set the attribute <code>clod</code> to true in the
+attribute map <code>neurons</code> which describes the LOD specification.
+
+\paragraph default_lods Default LOD specifications
+
+The default LOD specifications for automatic scenes are equivalent to the
+following ones:
+
+If meshes are loaded and <code>--clod</code> is not used:
+  \code
+  # Default LOD specification
+  mesh                  0.5 1.0
+  high_detail_cylinders 0.3 0.5
+  detailed_soma         0.3 0.5
+  low_detail_cylinders  0.0 0.3
+  spherical_soma        0.0 0.3
+  \endcode
+where <code>tubelets</code> is used instead of
+<code>high_detail_cylinders</code> if the option <code>--use-tubelets</code> is
+used.
+
+If <code>--no-meshes</code> is given in the command line:
+  \code
+  # LOD specification if --no-meshes is used
+  low_detail_cylinders 0.0 0.3
+  spherical_soma 0.0 1
+  high_detail_cylinders 0.3 1
+  \endcode
+where <code>tubelets</code> is used instead of
+<code>high_detail_cylinders</code> if the option <code>--use-tubelets</code> is
+used.
+
+If <code>--clod</code> is given in the command line, the specification is
+the following regardless of :
+  \code
+  # LOD specification if --clod is used
+  high_detail_cylinders 0 1
+  tubelets 0 1
+  detailed_soma 0 1
+  \endcode
+where <code>detailed_soma</code> is replaced by <code>spherical_soma</code> if
+<code>--no-meshes</code> is also provided.
+
+\paragraph disabling_lods Disabling LODs
+
+If the option <code>--no-lod</code> is passed in the command line, not LODs are
+used at all, and all targets to be displayed in detailed representation mode
+will be rendered using the detailed meshes. This option has the highest
+prevalence above all the others.
+
+\paragraph soma_only_notes Notes on soma only mode
+
+When using the \a soma \a only representation mode, morphologies will still be
+loaded to compute an appropriate sphere radius for each neuron. It is possible
+to not load morphologies and assign soma radii heuristically instead. In order
+to do so, use the command line option <code>--no-morphologies</code> for
+automatic scenes, or set <code>load_morphologies</code> to false in the
+attribute map passed to \link bbp::rtneuron::RTNeuron::createScene RTNeuron.createScene\endlink.
+The soma radii are assigned based on the morphology types as indicated in the
+following table (all radii in microns):
+<table style="margin-left: auto; margin-right: auto; text-align: center;">
+<tr><th style="width: 25%">Inhibitory cells</th>
+    <th style="width: 25%">Excitatory cells</th></tr>
+<tr style="vertical-align: top;"><td><table id="name_value_table">
+ <tr><td>ADC</td><td>7.72</td></tr>
+ <tr><td>AHC</td><td>7.54</td></tr>
+ <tr><td>BP</td><td>6.74</td></tr>
+ <tr><td>BTC</td><td>9.15</td></tr>
+ <tr><td>ChC</td><td>8.01</td></tr>
+ <tr><td>CRC</td><td>7.28</td></tr>
+ <tr><td>DBC</td><td>6.58</td></tr>
+ <tr><td>LBC</td><td>9.28</td></tr>
+ <tr><td>NBC</td><td>8.61</td></tr>
+ <tr><td>NGC</td><td>7.46</td></tr>
+ <tr><td>MC</td><td>9.37</td></tr>
+ <tr><td>SBC</td><td>7.75</td></tr>
+</table></td><td><table id="name_value_table">
+ <tr><td>L2PC</td><td>8.36</td></tr>
+ <tr><td>L3PC</td><td>7.70</td></tr>
+ <tr><td>L4PC</td><td>7.84</td></tr>
+ <tr><td>L4SP</td><td>7.76</td></tr>
+ <tr><td>L4SS</td><td>8.87</td></tr>
+ <tr><td>L5STPC</td><td>8.61</td></tr>
+ <tr><td>L5TTPC</td><td>11.17</td></tr>
+ <tr><td>L5UTPC</td><td>9.75</td></tr>
+ <tr><td>L6CCPC</td><td>7.71</td></tr>
+ <tr><td>L6CLPC</td><td>7.32</td></tr>
+ <tr><td>L6CTPC</td><td>7.00</td></tr>
+</table></td></tr>
+</table>
+
+For unknown morphology types, a default soma radius of 9 microns is used.
+This value can be changed for automatic scenes using the command line
+option <code>--soma-radius \a number</code>. From the shell, this value
+can only be changed setting the attribute <code>soma_radius</code> on the
+attribute map passed to the application object (\link
+bbp::rtneuron::RTNeuron RTNeuron\endlink) constructor.
+
+The default radii table cannot be modified for
+automatic scenes, but if you instantiate the application object (\link
+bbp::rtneuron::RTNeuron RTNeuron\endlink) manually, you can provide your own
+one in the AttributeMap passed to the constructor. The table is also an
+AttributeMap and must be assigned to an attribute named
+<code>soma_radii</code>. The radii attribute map contains morphological type, radius pairs.
+
+Currently, neither the radii table, nor the unknown type radius can be changed
+after creating the application object.
+
+\warning A shortcoming of the current design is that morphology names must be
+valid Python identifiers in order to use the syntax <code>table.name =
+radius</code>.  This limitation come be overcome using the alternative syntax
+<code>table.__setattr__(name, radius)</code>.
+
+The following code snippet shows an example of this usage and the image
+below an example of rendering which can be obtained this way:
+  \code{.py}
+  $ a = AttributeMap()
+  $ a.soma_radius = 2
+  $ radii = AttributeMap()
+  $ radii.L2PC = 10
+  ...
+  $ a.soma_radii = soma_radii
+  $ app = RTNeuron(sys.argv, a)
+  \endcode
+
+\image html column_exc_inh.png Soma column rendered with different colors, transparencies and soma radius for inhibitory and excitatory neurons.
+
+\subsubsection runtime_lods Changing levels of detail.
+
+At runtime the LOD bias can be adjusted in a per view basis. This parameter
+is a View attribute called <code>lod_bias</code> and accessed from
+\link bbp::rtneuron::View::getAttributes View.attributes\endlink.
+
+The LOD bias is a value in the range [0, 1] which is transformed internally in
+a value in the range [0, +inf), where 0.5 maps to 1. This bias is applied
+during LOD selection as a multiplicative to factor of the screen area covered
+by each bounding box.
+
+\section culling View frustum culling options
+
+REVIEW
+\if TODO
+
+The algorithm for view frustum culling can be configured in the commandline.
+By default, CUDA-based culling is used (the distributed binary requires CUDA
+to be available), in this mode the GPU is used to decide which parts of the
+neurons are visible.
+
+CUDA-based culling can be disabled with \c --no-cuda and neurons will be culled
+as a whole, using an axis-aligned bounding-box. Reasons for doing this are
+that either your system does not support CUDA (you will still need to install
+the CUDA runtime) or that the algorithm is working unreliably (this culling
+mode uses GPU memory).
+
+Another culling option is using an octree to decide which portions are
+visible. This algorithm is enabled with \c --no-cuda and \c --use-octree and
+consist of creating an octree that stores the same bounding volumes used for
+the CUDA algorithm, so basically it replaces the brute force GPU computation
+by a CPU computation based on a spatial partition. The maximum level of
+subdivision of the octree can be configured with \c --octree-depth.
+
+CUDA culling and octrees can be combined, but no benefits have been observed
+by doing it.
+
+\endif
+
+\section transparency Transparency
+
+REVIEW
+\if TODO
+
+\subsection transparency_modes Transparent rendering
+
+Transparent rendering is enabled with \c --alpha-blending. In this rendering
+mode fragments are sorted and composited using the over operator. When
+simulation display is enabled, the alpha channel from the neuron models is
+combined with the alpha channel from the simulation color map.
+
+\subsection transparency_algos Rendering algorithms
+
+RTNeuron implements two algorithms for order independent transparent rendering,
+and both are correct in the sense that all fragments are considered.
+
+The first one is multi-layer dual-depth peeling, it is the slower of the
+two, but it works with OpenGL 2. This algorithm splits the scene in slices
+depending on the depth of each pixel, the number of slices can be configured
+with \c --slices. In general the more slices the fewer passes, however more
+memory will be used and the rendering complexity will also increase slightly,
+thus, for each particular case there is a sweet spot. In the distributed
+package (which uses OpenGL 2) the default value is 4 slices and that performs
+well under most circumstances.
+
+The second algorithm captures all the fragments in a single pass, creating
+a linked list for each pixel and then sorts and composites the lists.
+This algorithm provides the best performance, but it requires a
+custom version of OpenSceneGraph with OpenGL 3 support.
+
+When \c --alpha-blending is given, the default algorithm that will be used
+is multi-layer dual-depth peeling. To choose an algorithm in particular add
+the algorithm name after the option as a parameter. The valid names are
+\c multilayer_depth_peeling and \c fragment_linked_list.
+
+Additional environmental variables control the behaviour of the algorithms.
+Please refer to the section on transparency option from
+\ref obscure_environmental_variables for more details.
+
+\endif
+
+\section display_config Display configuration
+
+REVIEW
+\if TODO
+
+For advanced display configuration the Equalizer version is the recommended
+choice. Please, refer to the Equalizer user guide to find information on
+how to write configuration files for multiple displays.
+\endif
+
+*/

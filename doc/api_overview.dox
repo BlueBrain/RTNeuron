@@ -1,0 +1,49 @@
+/* Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+ *                           Blue Brain Project and
+ *                          Universidad Politécnica de Madrid (UPM)
+ *                          Juan Hernando <juan.hernando@epfl.ch>
+ *
+ * This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/*!
+
+\page api_overview API overview
+
+# Main classes
+
+The main classes of the API are the **RTNeuron**, **Scene**, **View**,
+**Camera**. There are other BBPSDK classes that are relevant for the creation
+of scenes such as **Experiment**, **Microcircuit**, **Neurons**, **Synapses**,
+but the user is referred to the BBPSDK documentation for further details.
+
+## RTNeuron
+
+## Scene
+
+## View
+
+## Camera
+
+# Simplified class diagram
+
+The following class diagram shows the main classes and its relationships.
+A more detailed diagram showing the most important public methods can be
+found <a href=classes.png>here</a>.
+
+\image html classes_simple.png
+
+*/

@@ -1,0 +1,69 @@
+# Introduction
+
+This release adds several features to the creation and modification of
+scenes. The most important is the implementation of synapse targets in
+rtneuron-app.py, this is not exposed to the command line yet (only
+interactive shell and Python/C++ API), however it improves over the
+previous implementation in two important ways:
+- Synapses targets are not anymore tied to neurons.
+- A synapse target can be changed in size and color at any time.
+
+Apart from synapses now it is possible to add polygonal models loaded
+from files or created programmatically by the user as triangle meshes.
+
+Several bugs have also been fixed, prominently several affecting the use
+of RTNeuron as a Python module embedded in other applications.
+
+# New in this release
+
+## New Features
+- Now its possible to assign a different color to the axon and dendrites
+  of different targets when using by-branch coloring mode. (
+  <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-115>
+   BBPRTN-115</a>).
+- Adapted to support new triangle strips produced by NeuMesh (which
+  correct the triangle winding). Old strips are supported by versioning
+  of the mesh files.
+- Addition and modification of synapse targets to the scene. Once a
+  synapse target is added, it's possible to change its color and radius.
+- Addition of model files loadable by OpenSceneGraph plugins to the scene.
+- Addition of arbitrary polygonal meshes to the scene given as triangle
+  soups (<a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-103>
+  BBPRTN-103</a>)
+
+## API Changes
+- Added a new signal to RTNeuron triggered.
+- Added functions to Scene to include synapses and polygonal models to
+  the scene
+- In the Python side added the functions display_synapses and
+  display_shared_synapses to ease the addition of synapse targets.
+
+## Command line interface changes
+- Added to optional parameters to by-branch coloring mode
+- --soma-radius option implemented in rtneuron-app.py
+(<a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-104>
+  BBPRTN-104</a>)
+
+## Deprecation Deprecation and dropped support
+- Last release including rtneuron.osgviewer (now for real)
+
+## Documentation
+- TODO (update documentation with new features)
+
+## Bug Fixes
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-58>
+  BBPRTN-58</a>: Occlusion of text labels by neurons.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-108>
+  BBPRTN-108</a>.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-110>
+  BBPRTN-113</a>: Initialization problems of rtneuron Python module when
+  importing from an interactive Python shell.
+- The local scope of the IPython shell is now the global scope. This
+  fixes the undefined name errors inside callback functions that are
+  declared in the shell and invoked by the engine..
+- Fixed some bugs on scene management and view frustum culling
+  triggerred by display_circuit and scene updates.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-121>
+  BBPRTN-121</a> and
+  <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-122>
+  BBPRTN-122</a>, crashes at exit.

@@ -1,0 +1,12 @@
+*~
+*.orig
+*.rej
+___*
+\#*\#
+.\#*
+Debug
+Release
+.gdb_history
+CMakeLists.txt.user*
+Makefile
+.travis.yml

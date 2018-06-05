@@ -1,0 +1,58 @@
+# New in this release
+
+## New Features
+- Python wrapping of equalizer based library
+- New python based application replaces rtneuron.equalizer
+- Idle antialiasing and subpixel compounds.
+- Frustum queries (only in rtneuron.osgviewer)
+- Snapshot function that considers idle antialiasing.
+
+## Enhancements
+- Head tracking support reported to the console when no available and
+  --tracker is used.
+- Now all VRPN devices (spacemouse, wiimote and head tracking can be
+  specified from the command line).
+- More predictable output for movie recording.
+
+## Optimizations
+
+## Examples Examples
+
+## Tools Tools
+
+## API Changes
+
+## Command line interface changes
+
+- New options for target coloring are provided in rtneuron-app.py
+- Some options available in rtneuron.osgviewer are still missing in the
+  new application.
+
+## Deprecation/dropped support
+
+- The binary application rtneuron.osgviewer has been deprecated in
+favour of Equalizer-based Python library. New features won't be
+developed for this binary.
+- All BBP-SDK pipeline code has been removed
+- Stereo support in rtneuron.osgviewer has been degraded in favour of
+  better support for Equalizer. Single eye per camera is the only mode
+  guaranteed to work.
+
+## Documentation
+
+## Bug Fixes
+
+Couldn't be properly completed now (Jira is down?!)
+- All non Jira tickets from release 1.3.0 have been addressed
+- BBPRTN-71
+- BBPRTN-77
+- BBPRTN-66
+
+## Known Bugs
+
+- Simulation playback in rtneuron-app.py stalls in DB configurations.
+- Segfault at exit due to a yet to debug problem with type registration
+  in boost.serialization.
+- Simulation recording stalls if simulation is already being played back
+  at the moment of calling RTNeuron::record.
+- Idle AA doesn't support window resizing.

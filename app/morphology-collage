@@ -1,0 +1,625 @@
+#!/usr/bin/env python${USE_PYTHON_VERSION}
+##
+## Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+##                           Blue Brain Project and
+##                          Universidad Politécnica de Madrid (UPM)
+##                          Juan Hernando <juan.hernando@epfl.ch>
+##
+## This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+##
+## This library is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License version 3.0 as published
+## by the Free Software Foundation.
+##
+## This library is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along
+## with this library; if not, write to the Free Software Foundation, Inc.,
+## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import argparse
+import numpy as np
+import os
+import random
+import re
+from subprocess import call
+import shlex
+import sys
+
+try:
+  import nrrd
+except ImportError:
+  nrrd = None
+
+# Workaround to let the parsing of arguments like --clip-planes -1,0,0,0 be
+# parsed as expected.
+for i, arg in enumerate(sys.argv):
+  if (arg[0] == '-') and arg[1].isdigit(): sys.argv[i] = ' ' + arg
+
+class KeepMetavar:
+    pass
+
+class ParseClipPlanes(argparse.Action, KeepMetavar):
+
+    def __init__(self, *args, **kwargs):
+        argparse.Action.__init__(self, *args, **kwargs)
+        self.metavar = "x,y,z,w"
+        self.type = str
+        self.nargs = '*'
+
+    def __call__(self, parser, namespace, values, option):
+        planes = []
+        for v in values:
+            plane = v.split(",")
+            if len(plane) != 4:
+                raise argparse.ArgumentError(
+                    self, "Invalid number of elements")
+            try:
+                plane = list(map(float, plane))
+            except:
+                raise argparse.ArgumentError(
+                    self, "Parse error")
+            planes.append(plane)
+        setattr(namespace, self.dest, planes)
+
+# Command line arguments
+args_parser = argparse.ArgumentParser(
+    usage="""morphology_collage.py circuit_config [options...]""",
+    description="""Morphology collage image generator:
+    Produces images for compositing morphology collages from a given
+    circuit. The input is a CircuitConfig and the output is a set of n-images
+    per morphology type where each image shows a few neurons of that type.
+    Region boundaries are added to the scene as meshes that the user can provide
+    as input. The meshes are sliced using a couple of clipping planes""",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+args_parser.add_argument("circuit_config", type=str,
+                         help=argparse.SUPPRESS)
+
+# Data loading options
+group = args_parser.add_argument_group("Data loading options")
+group.add_argument(
+    "-m", "--mesh-path", type=str, default=".",
+    metavar="path", help="The path to the directory containing the meshes.")
+group.add_argument(
+    "-p", "--mesh-file-pattern", type=str, default="layer[1-6].ply",
+    metavar="pattern", help="The regex pattern for the mesh files to load")
+group.add_argument(
+    "-v", "--coord-volume", type=str, default=None, metavar="url",
+    help="A nrrd volume URL with a per voxel coordinate value to use for "
+    "--slice-from-volume, e.g. http://voxels.nexus.apps.bbp.epfl.ch/api/analytics/atlas/download?uri=9B1F97DD-13B8-4FCF-B9B1-59E4EBE4B5D8/longitude/longitude.nrrd")
+
+# Slicing options
+group = args_parser.add_argument_group("Slicing options")
+group.add_argument(
+    "--clip-planes", default=None, action=ParseClipPlanes,
+    help="One or more clip planes to add to the scene. Each plane equation is "
+    "a comma separated list of floats.")
+group.add_argument(
+    "-s", "--slice-from-volume", type=float, default=None, nargs=2,
+    help="Derive clip planes from a coordinate volume, e.g. the longitudinal "
+    "coordinate in hippocampus atlases.", metavar=("coord", "width"))
+
+# Output image options
+group = args_parser.add_argument_group("Output image options")
+group.add_argument(
+    "-a", "--axes-length", type=int, default=200,
+    metavar="microns", help="The length of the axes to be added to the image")
+group.add_argument(
+    "-i", "--images-per-mtype", type=int, default=1,
+    metavar="count", help="The number of images per morphological type")
+group.add_argument(
+    "--inset", type=int, default=None, nargs="?", const=200,
+    help="Add an inset that shows the position of the slice at global level",
+    metavar=("size in pixels"))
+group.add_argument(
+    "--inset-camera", type=float, default=None, nargs=3,
+    help="Camera position for the inset. The camera will be looking at the"
+    " centroid of the circuit", metavar=("x", "y", "z"))
+group.add_argument(
+    "--inset-camera-up", type=float, default=[0, 1, 0], nargs=3,
+    help="Up vector for the inset camera", metavar=("x", "y", "z"))
+group.add_argument(
+    "--inset-background", type=float, default=[0.8, 0.8, 0.8, 1], nargs=4,
+    help="Inset background color", metavar=("R", "G", "B", "A"))
+group.add_argument(
+    "-n", "--cells-per-image", type=int, default=3,
+    metavar="count", help="The number of cells per image.")
+group.add_argument(
+    "-r", "--resolution", type=int, default=0.5, metavar="pixels/um",
+    help="Image resolution, width and height will be computed depending on"
+    " the slice size")
+group.add_argument(
+    "-w", "--width", type=int, default=None, metavar="pixels",
+    help="Desired image width, the height will be computed automatically"
+    "depending on the circuit. Takes precedence over --resolution")
+
+# Rendering options
+group.add_argument(
+    "-b", "--background", type=float, default=[1, 1, 1, 1], nargs=4,
+    metavar=("R", "G", "B", "A"), help="Background color")
+group.add_argument(
+    "-c", "--clip-neurons", default=False, action="store_true",
+    help="Whether neurons should also be clipped or not")
+group.add_argument(
+    "-f", "--inflation-factor", type=float, default=0.5,
+    metavar="microns", help="Inflation factor for neurons")
+
+
+# Other static options
+region_alpha = 0.2
+region_colors = [[1, 0, 0, region_alpha], [1, 0.5, 0, region_alpha],
+                [1, 1, 0, region_alpha],  [0.5, 1.0, 0, region_alpha],
+                [0, 0.5, 1.0, region_alpha], [0.5, 0, 1.0, region_alpha]]
+max_distance_from_mid_plane = 200
+desired_max_distance_from_mid_plane = 50
+
+try:
+    options = args_parser.parse_args(sys.argv[1:])
+except Exception as e:
+    print(e)
+    exit(-1)
+
+if options.clip_planes is not None and options.slice_from_volume is not None:
+    print("--clip-planes and --slice-from-volume cannot be used together")
+    exit(-1)
+if options.slice_from_volume and not options.coord_volume:
+    print("--slice-from-volume requires --coord-volume")
+    exit(-1)
+
+# Some warnings/messages from these imports look ugly when printed before help.
+import rtneuron as rt
+import brain
+
+def compute_slice_from_longitude(dataset, position, width=100, epsilon=0.005):
+
+    import requests
+    import shutil
+
+    if dataset[:5] == "http:":
+        filename = os.path.basename(dataset)
+        req = requests.get(dataset, stream=True)
+        req.raise_for_status()
+        with open(filename, 'wb') as f:
+            req.raw.decode_content = True
+            shutil.copyfileobj(req.raw, f)
+    else:
+        filename = dataset
+
+    data, opts = nrrd.read(filename)
+
+    # extract nrrd metadata
+    origin = np.array(opts['space origin']).astype(np.float)
+    directions = np.array(opts['space directions']).astype(np.float)
+    # Let's assume the directions are just a scaling of canonical base.
+    scaling = np.array([directions[0][0], directions[1][1], directions[2][2]])
+
+    data_flat = data.ravel()
+
+    non_zero = data_flat != 0
+    data_min = np.min(data_flat[non_zero])
+    data_max = np.max(data_flat[non_zero])
+    epsilon = (data_max - data_min) * epsilon
+
+    if position < data_min or position > data_max:
+        print("Position out of range (%f, %f)" % (data_min, data_max))
+        return None
+
+    indices = np.where(non_zero & (data_flat < position + epsilon) &
+                       (data_flat > position - epsilon))[0]
+    coords = np.unravel_index(indices, data.shape)
+
+    points = np.transpose(np.array(coords))
+    points = np.multiply(points, scaling)
+    points = np.add(points, scaling * 0.5 + origin)
+
+    # The plane equation is computed by finding the least squares solution
+    # to the equation Ax = 0, where x is the plane equation (a, b, c, d) and
+    # A is a Nx4 matrix with the points extended with an extra colunm of 1's.
+    # To prevent lstsq from returning a trival all 0 solution, we constrain
+    # the solution to have c = -1
+    A = np.zeros((points.shape[0], 3))
+    A[:,:-1] = points[:, :2]
+    A[:,2] = np.ones((points.shape[0]))
+    C, _, _, _ = np.linalg.lstsq(A, points[:, 2])
+    C = np.array([C[0], C[1], -1, C[2]])
+    plane = C
+
+    # Normalizing the plane normal
+    factor = 1 / np.linalg.norm(plane[0:3])
+    plane *= factor
+
+    planes = []
+    # Computing the plane equations for the slice taking into account that the
+    # negative hemispace is clipped
+    p = np.array(plane)
+    p[3] += width * 0.5
+    planes.append(p)
+
+    p = np.array(-plane)
+    p[3] += width * 0.5
+    planes.append(p)
+
+    # Adding an extra plane to make sure that the slice doesn't cut the
+    # banana twice.
+    centroid = np.mean(points, axis=0)
+    _, eigenvectors = np.linalg.eigh(np.cov(np.transpose(points)))
+    # We take the second eigenvector as the direction of the tangent
+    # differential of the longitudinal axis, this will be used to compute the
+    # plane normal.
+    # PCA doesn't seem to be as robust as least-squares, so the plane normal
+    # is the eigenvector corrected to be perpendicular to the slice normal.
+    n = plane[0:3]
+    n = np.cross(np.cross(n, eigenvectors[1]), n)
+    n /= np.linalg.norm(n)
+    divisor = np.zeros((4))
+    divisor[:3] = n
+    divisor[3] = -np.dot(n, centroid) + max(data.shape * scaling) * 0.3
+    planes.append(divisor)
+    # Since we don't know the exact direction in which n is pointing, we
+    # add another clip plane in the other side
+    divisor = np.zeros((4))
+    divisor[:3] = -n
+    divisor[3] = -np.dot(-n, centroid) + max(data.shape * scaling) * 0.3
+    planes.append(divisor)
+
+    return planes
+
+if options.clip_planes:
+    clipping_planes = list(map(np.array, options.clip_planes))
+elif options.slice_from_volume:
+    position, width = options.slice_from_volume
+    clipping_planes = compute_slice_from_longitude(options.coord_volume,
+                                                   position, width)
+else:
+    clipping_planes = [[0.9696, -0.02328, -0.2434, -2871],
+                       [-0.9696, 0.02328, 0.2434, 3293]]
+
+def compute_cell_mask(positions, planes):
+    """Return the mask to select the cells contained between the clipping
+       planes"""
+
+    # Selecting the cells that are between the clipping planes.
+    positions4 = np.zeros((positions.shape[0], 4))
+    positions4[:,:-1] = positions
+    positions4[:,3:4] = 1
+    inside = np.ones((positions.shape[0]), dtype=bool)
+    for plane in planes:
+        inside &= np.dot(positions4, plane) > 0
+    if all(inside == False):
+        print("Invalid clip planes: all circuit is clipped")
+        exit(-1)
+    return inside
+
+def compute_axes(circuit_info, front):
+    """Compute the world location of the axes for the camera view to use for
+       the collage and the bounding box of the given circuit in this reference
+       frame."""
+
+    positions = circuit_info.positions
+    transforms = circuit_info.transforms
+
+    # The up vector hint is computed as the average of the transformed y-axis of
+    # all the cells. The front vector is perpendicular to the clipping planes
+    y = np.array([0, 1, 0, 0])
+    mean = np.zeros((3))
+    for transform in transforms:
+        mean += np.dot(transform, y)[0:3]
+    up = mean / transforms.shape[0]
+    up /= np.linalg.norm(up)
+    if np.dot(up, front) > 1 - 1e-5:
+        # The first clipping plane is perpendicular to the up vector. In this
+        # case It's not very clear what should be the best approach, so we pick
+        # an arbitray vector perpendicular to the clip plane normal as front
+        # vector
+        assert(any(front != 0))
+        if front[1] != 0 or front[2] != 0:
+            front = np.array([0, -front[2], front[1]])
+        else:
+            front = np.array([-front[1], front[0], 0])
+        front /= np.linalg.norm(front) # We need to renormalize
+    right = np.cross(up, front)
+    up = np.cross(front, right)
+
+    axes_to_world = np.zeros((3, 3))
+    axes_to_world[0] = right
+    axes_to_world[1] = up
+    axes_to_world[2] = front
+
+    return axes_to_world
+
+def render_inset(planes):
+
+    rt.global_attributes.window_width = options.inset
+    rt.global_attributes.window_height = options.inset
+    view = rt.display_empty_scene(argv=['', '--eq-layout', 'Simple'])
+    view.attributes.background = options.inset_background
+    scene = view.scene
+    rt.sceneops.enable_transparency(scene)
+
+    # Adding the geometry of the planes
+    for plane in planes:
+        normal = plane[0:3]
+        if normal[0] != 1:
+            x = np.cross(normal, np.array([1, 0, 0]))
+        elif normal[1] != 1:
+            x = np.cross(normal, np.array([0, 1, 0]))
+        else:
+            x = np.cross(normal, np.array([0, 0, 1]))
+        y = np.cross(normal, x)
+        p = center - normal * (np.dot(center, normal) + plane[3])
+
+        side = 2400
+        corners = np.array([p - x * side - y * side, p + x * side - y * side,
+                            p + x * side + y * side, p - x * side + y * side])
+        scene.addGeometry(corners, [[0, 1, 3], [3, 1, 2]],
+                          colors=[1, 1, 1, 0.2],
+                          attributes=rt.AttributeMap({"flat": True}))
+        scene.addGeometry(corners, [[0, 1], [1, 2], [2, 3], [3, 0]],
+                          colors=[0, 0, 0, 1],
+                          attributes=rt.AttributeMap({"line_width": 2}))
+
+
+    # Adding the models
+    for model, color in zip(mesh_models, region_colors):
+        # We make the meshes opaque for the inset
+        color = [color[0], color[1], color[2], 1]
+        scene.addModel(model, attributes=rt.AttributeMap({"color": color}))
+
+    if options.inset_camera is not None:
+        circuit = brain.Circuit(options.circuit_config)
+        lookat = np.mean(circuit.positions(circuit.gids()), axis=0)
+        lookat = list(map(float, lookat))
+        view.camera.setViewLookAt(options.inset_camera, lookat,
+                                  options.inset_camera_up)
+
+    view.snapshot("inset.png")
+
+# Finding out which meshmodels to use
+mesh_models = []
+regex = re.compile(options.mesh_file_pattern)
+for path in os.listdir(options.mesh_path):
+    filename = os.path.join(options.mesh_path, path)
+    if regex.match(path) and os.path.isfile(filename):
+        mesh_models.append(filename)
+mesh_models.sort()
+
+# Extracting the circuit data needed for all GIDs.
+# We will not query the circuit for a subset of any of these data and will use
+# array masks instead because the implementation for mvd3 in MVDTool to query
+# subset of cells is very slow in debug mode.
+circuit = brain.Circuit(options.circuit_config)
+
+class CircuitInfo(object): pass
+circuit_info = CircuitInfo
+all_gids = circuit.gids()
+circuit_info.gids = all_gids
+circuit_info.positions = circuit.positions(all_gids)
+circuit_info.transforms = circuit.transforms(all_gids)
+circuit_info.mtypes = circuit.morphology_types(all_gids)
+
+# Selecting the cells that are between the clipping planes.
+mask = compute_cell_mask(circuit_info.positions, clipping_planes)
+
+circuit_info.gids = all_gids[mask]
+circuit_info.positions = circuit_info.positions[mask]
+circuit_info.transforms = circuit_info.transforms[mask]
+circuit_info.mtypes = circuit_info.mtypes[mask]
+
+# Computing the gid sets for each morphology type
+mtype_names = circuit.morphology_type_names()
+msets = {}
+for name in mtype_names:
+    msets[name] = circuit_info.gids[circuit_info.mtypes == len(msets)]
+
+# Computing the camera placement.
+front_axis = clipping_planes[0][0:3]
+front_axis /= np.linalg.norm(front_axis)
+axes_to_world = compute_axes(circuit_info, front_axis)
+
+world_to_axes = np.linalg.inv(axes_to_world)
+transformed = np.dot(circuit_info.positions, world_to_axes)
+circuit_info.transformed = transformed
+# The AABB is local to axes
+aabb = (np.min(transformed, axis=0), np.max(transformed, axis=0))
+
+local_center = (aabb[0] + aabb[1]) * 0.5
+aabb = (aabb[0] - local_center, aabb[1] - local_center)
+center = np.dot(local_center, axes_to_world)
+# For the moment we use a simple approximation to the real bounding box of
+# the dendritic trees
+dendrite_aabb = (aabb[0] - np.array([300, 300, 0]),
+                 aabb[1] + np.array([300, 300, 0]))
+
+if options.width:
+    width = options.width
+    um_per_pixel = (dendrite_aabb[1][0] - dendrite_aabb[0][0]) / options.width
+else:
+    um_per_pixel = 1 / options.resolution
+    width = int((dendrite_aabb[1][0] - dendrite_aabb[0][0]) *
+                options.resolution)
+height = int((dendrite_aabb[1][1] - dendrite_aabb[0][1]) / um_per_pixel)
+
+# Minimum horizontal distance between cell somas in microns
+minimum_cell_distance = width / 10
+
+# We first create a scene for the inset showing the meshes and the location
+# of the clipping planes
+if options.inset is not None:
+    side = min(min(width, height), int(max(width, height) * options.inset))
+    render_inset(clipping_planes[:2])
+
+# Now we render a scene with the planes and the axis and capture this as
+# a background image. Neurons will be rendered on a blank canvas and
+# composited later
+
+rt.global_attributes.window_width = width
+rt.global_attributes.window_height = height
+scene_attr = rt.AttributeMap()
+scene_attr.inflatable_neurons = True
+scene_attr.use_meshes = False
+view = rt.display_empty_scene(scene_attributes=scene_attr,
+                              argv=['', '--eq-layout', 'Simple'])
+# We pause the rendering to avoid problems while updating the scene
+rt.engine.pause()
+view.attributes.background = options.background
+view.attributes.auto_compute_home_position = False
+view.attributes.auto_adjust_model_scale = False
+view.attributes.inflation_factor = 0.5
+
+scene = view.scene
+scene.circuit = circuit
+
+# Adding region meshes
+for model, color in zip(mesh_models, region_colors):
+    scene.addModel(model, attributes=rt.AttributeMap({"color": color}))
+
+rt.sceneops.enable_transparency(scene)
+for i, plane in enumerate(clipping_planes):
+    scene.setClipPlane(i, plane)
+
+# Adding the scale axis
+def add_axes(corner, axes):
+    points = np.zeros((4, 3))
+    points[0] = corner
+    points[1] = corner + axes[1] * options.axes_length
+    points[2] = corner
+    points[3] = corner + axes[0] * options.axes_length
+    scene.addGeometry(points, [[0, 1], [2, 3]],
+                      colors=[[0, 0.5, 0, 1], [0, 0.5, 0, 1], [0.8, 0, 0, 1],
+                              [0.8, 0, 0, 1]])
+
+add_axes(np.dot(np.array([dendrite_aabb[0][0] + um_per_pixel * 10,
+                          dendrite_aabb[0][1] + um_per_pixel * 10, 0]),
+                axes_to_world) + center, axes_to_world)
+
+### Front orthographic projection camera
+front = axes_to_world[2]
+up = axes_to_world[1]
+eye = center + front * aabb[1][2] * 6
+camera = view.camera
+camera.setViewLookAt(eye, center, up)
+camera.makeOrtho()
+camera.setProjectionOrtho(dendrite_aabb[0][0], dendrite_aabb[1][0],
+                          dendrite_aabb[0][1], dendrite_aabb[1][1])
+view.attributes.model_scale = 1
+rt.engine.resume()
+
+# If neuron clipping is not enabled we still have to clip the meshes. The
+# solution for the moment is to clip the meshes, take a snapshot of that
+# and then composite this background and with the unclip neurons.
+if not options.clip_neurons:
+    view.snapshot("background.png")
+    scene.clear()
+    # Ideally it should be possible to disable the transaprency, but doing so
+    # spits out OpenGL errors.
+    # rt.sceneops.disable_transparency(scene)
+
+# Iterating over the object handlers to display each mtype individually and
+# make a snapshot
+
+# Adding a scene object per mtype and taking the snapshot
+view.attributes.background = [0, 0, 0, 0]
+
+attributes = rt.AttributeMap()
+attributes.mode = rt.RepresentationMode.WHOLE_NEURON
+attributes.primary_color = [1, 0, 0, 1]
+attributes.secondary_color = [0, 0.5, 1, 0.25]
+attributes.color_scheme = rt.ColorScheme.BY_BRANCH_TYPE
+
+def render_mtype_sample(name, gids, circuit_info, present, index):
+    """Render a subset of the cells given making sure none of them is part
+    of the list in `present'. The cells picked are added to `present'.
+
+    Parameters:
+    - name: mtype name
+    - gids: candidate cell gids
+    - index: number of sample image or None
+    - present: list of cells already added or shown in another sample for this
+      mytpe.
+    """
+    assert(len(gids) != 0)
+    permutation = np.array(range(len(gids)))
+    random.seed(index)
+    random.shuffle(permutation)
+    gids = np.array(gids)[permutation]
+    mtype = mtype_names.index(name)
+    mtypes = circuit_info.mtypes
+    rotated_positions = circuit_info.transformed[mtypes == mtype][permutation]
+    global_positions = circuit_info.positions[mtypes == mtype][permutation]
+
+    inserted = {}
+    target = []
+    distance = desired_max_distance_from_mid_plane
+    # Adding up to cells_per_image cell making sure that they are not closer
+    # to each other less than a given minimum distance in the xy local plane
+    # and that they are not very far away from the mid plane. If no cell is
+    # found we repeat with a bigger distance.
+    while len(inserted) == 0 and distance < max_distance_from_mid_plane:
+        for gid, rotated, position in zip(gids, rotated_positions,
+                                          global_positions):
+            # converting position to something projectPoint can accept.
+            position = list(map(float, position))
+            pixel = np.array(view.camera.projectPoint(position)[0:2])
+            pixel[0] = (pixel[0] + 1) * width * 0.5
+            pixel[1] = (1 - pixel[1]) * height * 0.5
+            if gid in present:
+                continue
+            if abs(rotated[2] - local_center[2]) > distance:
+                continue
+            good = True
+            for i in inserted.values():
+                d = abs(pixel - i)
+                if d[0] < minimum_cell_distance:
+                    good = False
+                    break
+            if good:
+                target.append(int(gid))
+                present.add(gid)
+                inserted[gid] = pixel
+            if len(inserted) >= options.cells_per_image:
+                break
+        distance += (max_distance_from_mid_plane -
+                     desired_max_distance_from_mid_plane) / 4
+
+    handler = scene.addNeurons(target, attributes)
+    if index is None:
+        filename = "%s.png" % name
+    else:
+        filename = "%s.%d.png" % (name, index + 1)
+    view.snapshot(filename)
+
+    # To not rebuild the scene, which can take time due to the meshes,
+    # we simply hide the neurons just added
+    handler.attributes.mode = rt.RepresentationMode.NO_DISPLAY
+    handler.update()
+
+    annotation_params =" -gravity SouthWest -pointsize 15 -annotate +36+10 '{0} um'".format(options.axes_length)
+    if index == 0 or index is None:
+        annotation_params += " -gravity NorthWest -pointsize 20  -annotate +10+10 '{0}'".format(name)
+    for gid, pixel in inserted.items():
+        annotation_params += " -gravity NorthWest -pointsize 12  -undercolor '#ffffff80' -annotate +{0}+{1} '{2}'".format(pixel[0], pixel[1] + 10, gid)
+
+    call(shlex.split("convert {0} {1} {0}".format(
+        filename, annotation_params)))
+    if not options.clip_neurons:
+        call(shlex.split("composite {0} background.png {0}".format(filename)))
+    if options.inset is not None:
+        call(shlex.split(
+          "composite inset.png -gravity SouthEast {0} {0}".format(
+            filename)))
+
+for name, gids in sorted(msets.items()):
+    present = set()
+    if len(gids) == 0:
+        print("No cells of mtype " + name + " available in the slice")
+        continue
+
+    if options.images_per_mtype == 1:
+        render_mtype_sample(name, gids, circuit_info, present, None)
+    else:
+        for i in range(options.images_per_mtype):
+            render_mtype_sample(name, gids, circuit_info, present, i)

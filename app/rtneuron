@@ -1,0 +1,396 @@
+#!/usr/bin/env python${USE_PYTHON_VERSION}
+##
+## Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+##                           Blue Brain Project and
+##                          Universidad Politécnica de Madrid (UPM)
+##                          Juan Hernando <juan.hernando@epfl.ch>
+##
+## This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+##
+## This library is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License version 3.0 as published
+## by the Free Software Foundation.
+##
+## This library is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along
+## with this library; if not, write to the Free Software Foundation, Inc.,
+## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Checking if rtneuron.py is inside a development tree or is a system wide
+# installed application (either by system package or GNU module).
+import sys
+import os
+import math
+import numpy
+
+prefix = os.path.abspath(sys.argv[0])
+prefix = os.path.dirname(os.path.dirname(prefix))
+
+if os.path.isfile(prefix + '/CMakeCache.txt'):
+    # Running for a build tree or the install directory
+    prefix_paths = '${CMAKE_PREFIX_PATH}'.split(';')
+    prefix_paths[:] = [item + '/${PYTHON_LIBRARY_SUFFIX}'
+                       for item in prefix_paths]
+    sys.path = (['${CMAKE_BINARY_DIR}/lib',
+                 '${CMAKE_INSTALL_PREFIX}/lib',
+                 '${CMAKE_INSTALL_PREFIX}/${PYTHON_LIBRARY_SUFFIX}'] +
+                prefix_paths + sys.path)
+else:
+    # These paths may not be needed, but added just in case that PYTHONPATH
+    # and other library loading variables (such as LD_LIBRARY_PATH in Linux) do
+    # not contain them.
+    sys.path = [prefix + '/lib',
+                prefix + '/${PYTHON_LIBRARY_SUFFIX}'] + sys.path
+# Adding the current directory to the import path.
+sys.path.append('')
+
+import rtneuron
+rtneuron.parse_options(sys.argv[1:])
+
+# brain mustn't be imported before rtneuron, otherwise the workarond
+# for the boost Python shared_ptr_dxeleter is not effective.
+import brain
+
+options = rtneuron.options
+is_client_node = "--eq-client" in sys.argv
+if is_client_node:
+    # The GUI is intented to be overlaid on just a single destination channel
+    # present at the application node. Disabling it for the rendering clients.
+    options.gui = False
+
+# ipython 0.10 is messing up with the exit function and we need to invoke
+# the original one
+sys_exit = exit
+
+# The following decorator is used to call rtneuron module functions and then
+# extract the first view and its scene to inject the variables in the
+# rtneuron namespace. This way, the variables are kept up to date in the
+# IPython console.
+# The decorator module simplifies this task and helps to preserve the
+# signature and documentation of the decorated functions.
+import decorator as _decorator
+@_decorator.decorator
+def _scene_view_update_decorator(func, *args, **kwargs):
+    x = func(*args, **kwargs)
+    if hasattr(rtneuron, "engine"):
+        rtneuron.view = rtneuron.engine.views[0]
+        rtneuron.scene = rtneuron.view.scene
+    return x
+
+rtneuron.display_circuit = \
+    _scene_view_update_decorator(rtneuron.display_circuit)
+rtneuron.display_empty_scene = \
+    _scene_view_update_decorator(rtneuron.display_empty_scene)
+rtneuron.display_morphology_file = \
+    _scene_view_update_decorator(rtneuron.display_morphology_file)
+rtneuron.start_app = \
+    _scene_view_update_decorator(rtneuron.start_app)
+
+def _get_corrected_frame_count(player, frames):
+    if not frames:
+        return None
+    start = player.beginTime
+    end = player.endTime
+    step = player.simulationDelta
+    maxFrames = int(math.floor((end - start) / step))
+    if frames > maxFrames:
+        print("Warning: Reducing frame count to", maxFrames, \
+              "to accomodate the simulation window and step")
+        return maxFrames
+    return frames
+
+if options.demo:
+    print("--demo option is deprecated, use --app instead")
+    options.app = options.demo
+if options.app:
+    if options.app == "help":
+        # Finding out the list of available apps.
+        print("Available apps:")
+        app_path = rtneuron.__path__[0] + '/apps'
+        for filename in os.listdir(app_path):
+            path, ext = os.path.splitext(filename)
+            if (ext == '.py' and path != "__init__" and
+                os.path.isfile(app_path + '/' + filename)):
+                print(path)
+        sys_exit()
+
+    print("""\
+RTNeuron ${PROJECT_VERSION}
+
+Launching app """ + options.app + """
+Type help(app) on the console for additional details""")
+    try:
+        rtneuron.start_app(options.app)
+    except Exception as e:
+        if hasattr(rtneuron, "engine"):
+            rtneuron.engine.exit()
+        print(e)
+        # Printing trace to help debugging app modules
+        import traceback
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_tb(exc_traceback)
+    rtneuron.start_shell()
+    sys_exit()
+
+if options.blue_config == None:
+    print("""\
+RTNeuron ${PROJECT_VERSION}
+
+If you are new to RTNeuron, please read the following:
+- Some interesting capabilities of RTNeuron are demonstrated by a few
+  power applications.
+  Launch rtneuron with --app help to see the full list of apps available.
+  Launch rtneuron with --app app_name or type start_app('app_name') inside
+  the shell to start one.
+- To quickly display a target name from a circuit, type:
+  [1]: display_circuit('path/to/blue/config', 'target_name')
+  Typical target names are Column, MiniColumn_0, Layer5, Excitatory...
+  You can call display_circuit with no parameters to load a default circuit
+  and target.
+- The camera is manipulated with the mouse (https://developer.humanbrainproject.eu/docs/projects/RTNeuron/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/basics.html#camera_tackball_manipulator))
+
+Please read the user guide for more information: https://developer.humanbrainproject.eu/docs/projects/RTNeuron/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/index.html
+""")
+
+    rtneuron.start_shell()
+    sys_exit()
+
+theGUI = None
+theQApp = None
+
+if options.gui:
+    from rtneuron import gui
+    qt_app = gui.create_qt_app()
+    if not qt_app:
+        options.gui = False
+        print("Unsupported platform/setup for GUI, disabling it")
+
+    try:
+        gui_widget = gui.GUI()
+    except Exception as e:
+        print("Failed to setup GUI")
+        print(e)
+        sys_exit()
+
+# Creating the application object
+engine = rtneuron.RTNeuron(sys.argv, rtneuron.global_attributes)
+rtneuron.engine = engine
+
+# Connect GUI with engine; do this before engine.init()
+if options.gui:
+    engine.setShareContext(gui_widget.get_background_context())
+
+# Loading the circuit data (only neurons and synapses)
+targets = []
+if options.blue_config != None:
+    # Opening simulation
+    simulation = brain.Simulation(options.blue_config)
+    rtneuron.simulation = simulation
+
+    # Creating the list of targets to load with their properties
+    targets = []
+    for key, prop in options.targets:
+        target = rtneuron.util.key_to_gids(key, simulation)
+        if target is None:
+            print("Warning: Cannot convert target key %s into a valid target" %
+                  str(key))
+        else:
+            targets.append((target, prop))
+
+# Creating the scene
+scene, display_simulation = \
+    rtneuron.create_scene(engine, simulation, targets,
+                          report_name = options.report,
+                          spikes = options.spikes)
+rtneuron.scene = scene
+
+if options.sim_step:
+    engine.player.simulationDelta = options.sim_step
+
+# Initializing the rendering configuration
+engine.init()
+
+###############################################################################
+# From here on only the application node executes
+if "--eq-client" in sys.argv:
+    engine.wait()
+    exit(0)
+
+color_map = None
+if options.color_map:
+    color_map = rtneuron.ColorMap()
+    color_map.load(options.color_map)
+
+cameraManipulator = rtneuron.choose_camera_manipulator(options)
+
+assert(len(engine.views) != 0)
+for v in engine.views:
+    if display_simulation:
+        v.attributes.display_simulation = True
+    if color_map:
+        v.colorMap = color_map
+    if cameraManipulator:
+        v.cameraManipulator = cameraManipulator
+
+    try:
+        if options.use_wiimote_pointer:
+            v.pointer = rtneuron.WiimotePointer(options.use_wiimote_pointer)
+    except Exception as e:
+        print(e)
+
+    v.scene = scene
+del v
+
+view = engine.views[0]
+rtneuron.view = view
+
+# Waiting for the first 2 frames: 1 for triggering scene building,
+# 1 for building and display.
+for i in range(2):
+    engine.frame()
+    engine.waitFrame()
+
+# Setting up net synchronization options
+if options.rest or options.sync_camera or options.sync_selections:
+    import rtneuron.net
+
+if options.rest:
+    try:
+        # The string argument of the --zeroeq-http-server option is ignored
+        # because RestInterface passes all the command line options to
+        # ZeroEQ.
+        rest_interface = rtneuron.net.RestInterface(sys.argv, view)
+        def shutdown_rest_interface():
+            global rest_interface
+            del rest_interface
+        engine.exited.connect(shutdown_rest_interface)
+    except RuntimeError as exc:
+        print("Error creating REST interface:" + str(exc))
+
+if options.sync_camera:
+    session = options.sync_camera
+    try:
+        if session == True:
+            camera_broker = rtneuron.net.CameraBroker(view.camera)
+        else:
+            camera_broker = rtneuron.net.CameraBroker(session, view.camera)
+    except RuntimeError as exc:
+        print("Error creating camera broker:" + str(exc))
+
+if not options.gui:
+    if options.sync_selections:
+        session = options.sync_selections
+        try:
+            if session == True:
+                selection_broker = rtneuron.net.SceneEventBroker()
+            else:
+                selection_broker = rtneuron.net.SceneEventBroker(session)
+            selection_broker.trackState = options.track_selections
+            selection_broker.trackScene(scene)
+
+            def updateSelection(target):
+                current = rtneuron.scene.highlightedNeurons
+                # Unhighlighting deselected
+                rtneuron.scene.highlight(current - target, False)
+                # Highlighting newly selected
+                rtneuron.scene.highlight(target - current, True)
+
+            selection_broker.cellsSelected.connect(updateSelection)
+
+        except RuntimeError as exc:
+            print("Error creating selection broker:", exc)
+    else:
+        # Selection callbacks
+        class _Selections:
+            def toggle(self, gid):
+                neurons = rtneuron.scene.highlightedNeurons
+                i = numpy.searchsorted(neurons, gid)
+                missing = bool(i >= len(neurons) or neurons[i] != gid)
+                rtneuron.scene.highlight({gid}, missing)
+
+            def cellSelected(self, gid, section, segment):
+                s = 'Selected: Neuron GID ' + str(gid)
+                s += ', Section ID ' + str(section)
+                s += ', Segment ID ' + str(segment)
+                self.toggle(gid)
+
+            def synapseSelected(self, synapse):
+                print('Selected: Synapse GID ' + str(synapse.gid()))
+                gid = synapse.post_gid()
+                self.toggle(gid)
+
+        selections = _Selections()
+        scene.cellSelected.connect(selections.cellSelected)
+        scene.synapseSelected.connect(selections.synapseSelected)
+
+if options.sim_window:
+    engine.player.window = list(options.sim_window)
+
+# Setting up frame grabbing
+if options.grab_frames:
+    params = rtneuron.RecordingParams()
+    if options.camera_path != None:
+        path = rtneuron.CameraPath()
+        path.load(options.camera_path)
+        params.cameraPath = path
+        params.stopAtCameraPathEnd = path.startTime != path.stopTime
+    if options.camera_path_fps != 0:
+        params.cameraPathDelta = 1.0 / options.camera_path_fps * 1000.0
+    params.frameCount = options.frame_count
+    params.filePrefix = options.file_prefix
+    params.fileformat = options.file_format
+    if display_simulation:
+        # The simulation window was already setup by create_scene in the player
+        params.simulationStart = engine.player.beginTime
+        params.simulationEnd = engine.player.endTime
+        params.simulationDelta = engine.player.simulationDelta
+    engine.record(params)
+elif display_simulation and not options.shell and not options.gui:
+    engine.player.play()
+
+if options.proof_frame:
+    view.attributes.snapshot_at_idle = False
+    view.snapshot(options.proof_frame)
+    view.attributes.snapshot_at_idle = True
+
+if options.shell:
+    if options.gui:
+        gui_widget.connect_engine(engine)
+    engine.resume()
+    # Deleting local variables pointing to the engine objects. The rtneuron
+    # module will keep now the only references to these objects.
+    del engine
+    del simulation
+    del scene
+    del view
+    # Yielding the control to the interactive Python console
+    rtneuron.start_shell()
+    # Final cleanup
+    if hasattr(rtneuron, "engine"):
+        rtneuron.engine.exit();
+elif options.gui:
+    gui_widget.connect_engine(engine)
+    engine.resume()
+    gui_widget.run()
+    engine.exit()
+    # Avoiding an assert at exit in debug builds.
+    del engine
+else:
+    frames = options.frame_count
+    if display_simulation:
+        frames = _get_corrected_frame_count(engine.player, frames)
+    if frames:
+        engine.waitFrames(frames)
+    else:
+        engine.resume()
+        # Waiting for the application loop to finish
+        engine.wait()
+    engine.exit()
+    # Avoiding an assert at exit in debug builds.
+    del engine
+
+del rtneuron.engine

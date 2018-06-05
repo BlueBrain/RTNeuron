@@ -1,0 +1,155 @@
+/* Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+ *                           Blue Brain Project and
+ *                          Universidad Politécnica de Madrid (UPM)
+ *                          Juan Hernando <juan.hernando@epfl.ch>
+ *
+ * This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/**
+
+\page user_guide User Guide
+
+\section TABLE_OF_CONTENTS TABLE OF CONTENTS
+
+  -# \ref Introduction
+  -# \subpage compilation
+  -# \subpage basics
+    -# \ref starting_rtneuron
+    -# \ref basic_concepts
+    -# \ref command_line_scenes
+    -# \ref interpreter_scenes
+      -# \ref helper_functions_scenes
+      -# \ref manual_scenes
+    -# \ref object_attributes
+    -# \ref simulation
+    -# \ref cameras
+      -# \ref camera_object
+      -# \ref camera_paths
+      -# \ref camera_manipulators
+    -# \ref movies
+      -# \ref cli_frame_grabbing
+      -# \ref rtneuron_record
+      -# \ref view_frame_grabbing_api
+  -# \subpage advanced
+    -# \ref levels_of_detail
+\if ignore
+    -# \ref stereo
+    -# \ref transparency
+    -# \ref targets
+    -# \ref display_config
+\endif
+
+\section Introduction
+
+This guide explains RTNeuron features grouped by different themes and gives
+a series of recipes that show how those features are used in real examples:
+from basic circuit loading and display to how to setup the cameras and
+simulation playback to generate a high quality movie.
+
+RTNeuron makes uses of the Equalizer framework for rendering. This means
+that it is possible take advantage of multiple GPUs or even GPU-based
+clusters to speed up the rendering using parallel rendering techniques.
+This guide will cover only some basic aspects of the parallel rendering
+features as well as some other features provided by Equalizer which may be
+interesting to some users (such as off-screen rendering and stereoscopy).
+
+For further instructions on how to build RTNeuron from the sources in your
+system refer to \ref compilation. If you're going to work in the vizcluster,
+loading the latest RTNeuron module is enough to get you up and running (type
+<tt>module load BBP/viz/latest</tt> in your shell to load it).
+
+The current RTNeuron package provides 3 main components:
+- A high level <a href="annotated.html">C++ library</a>.
+- A <a href="python/index.html">Python module</a> that wraps the C++
+  library and provides additional tools.
+- The Python application script \c rtneuron
+
+A wide variety of scenarios is covered by \c rtneuron. When the user
+needs finer control on the rendering, such as in movie production or to speed
+up the exploration of different data sets, the Python wrapping is the way to
+go. The Python wrapping can be used through a IPython shell started directly
+from \c rtneuron or importing the module \c rtneuron into your own Python
+programs. The C++ library is not intended for regular users and will not be
+covered in this guide beyond the automatically generated doxygen reference.
+
+\subsection quick_start Quick start
+
+### If you are working in the vizcluster:
+
+The latest release version of RTNeuron (@PROJECT_VERSION@) is provided as part
+of the GNU module with all the visualization tools, namely BBP/viz/latest (or
+BBP/viz/2016.R2 for the latest stable release).
+
+To log into the cluster the recommended method is to use \c vizsh, this will
+setup the necessary environment for you. You can check the
+<a href="https://bbpteam.epfl.ch/project/spaces/display/INFRA/Analysis+and+Visualization+Cluster">\c vizsh documentation</a> for details.
+For basic purposes, it is enough to log into the cluter invoking \c vizsh
+without arguments. If you need exclusive access to one node use <code>vizsh -n
+1</code>.
+
+There is no need to run RTNeuron under \c vglrun. If you connected using
+\c vizsh or \c vglconnect, RTNeuron will find out if you are running in the
+cluster and setup VirtualGL automatically (this behaviour can be disabled
+by unsetting the variable VGL_DISPLAY from the environment).
+
+By default, \c vizsh allocates resources in the Lugano vizcluster, you can use
+the -l option to allocate nodes in the Geneva cluster, but be aware that
+\c vizsh doesn't interact correctly with SLURM to start the X server in all the
+nodes in the Geneva cluster. The solution is to use salloc and srun to launch
+a process such as \c hw_sd with \c --startx. An example for 2 nodes follows:
+\verbatim
+bbplxviz1$ salloc -N 2 --gres=gpu:3 srun --gres=gpu:3 --startx /path/to/hw_sd
+\endverbatim
+Then, from another console, connect with vglconnect to any node.
+
+### If you are working in your own machine:
+
+Starting from release 2.6, no \c .deb or \c .rpm packages are provided anymore.
+If you want to use the latest RTNeuron, you will have to compile it
+from source. Refer to \ref rtneuron_compilation for additional detais. If you
+prefer to use an older version for which packages still exist in the BBP
+software repositories, refer to the <a href="https://bbp.epfl.ch/documentation/code/RTNeuron-2.5/install_and_compile.html#rtneuron_installation">installations instructions</a>
+of the RTNeuron 2.5's user guide.
+
+### Once RTNeuron is intalled/ready to use:
+From a shell console run \c rtneuron with no arguments.
+
+The IPython shell prompt should appear:
+\verbatim
+No blue config file or model list specified. Launching shell
+RTNeuron interactive Python shell
+In [1]:
+\endverbatim
+In the IPython shell type:
+\verbatim
+In [1]: display_circuit('path/to/blue/config', 'target_name')
+\endverbatim
+The same result can be obtained using just command line parameters:
+\verbatim
+$ rtneuron -b /path/to/blue/config --target target_name
+\endverbatim
+If you want to play with a scene loaded from the command line add the option
+\c --shell and the IPython shell will be started after the scene is rendered.
+
+You can also use the command line option \c --demo to load a default circuit
+and setup RTNeuron to show some of its features. Once the circuit is loaded
+try clicking on neuron somas, the display mode of the clicked neuron will
+change to show the synaptic pathways for anterograde projections, and then
+retrograde projections if the same cell is clicked again. The demo can
+also be started from the Python console by calling \c start_demo().
+
+*/

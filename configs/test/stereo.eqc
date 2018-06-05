@@ -1,0 +1,43 @@
+#Equalizer 1.1 ascii
+server
+{
+    config
+    {
+        appNode
+        {
+            pipe
+            {
+                window
+                {
+                    viewport [ 200 200 600 600 ]
+                    channel { name "channel1" }
+                }
+            }
+        }
+
+        observer {}
+        layout { view { mode STEREO observer 0 } }
+
+        canvas
+        {
+            layout 0
+            wall
+            {
+                bottom_left  [ -.32 -.32 -.75 ]
+                bottom_right [  .32 -.32 -.75 ]
+                top_left     [ -.32  .32 -.75 ]
+            }
+
+            segment
+            {
+                channel "channel1"
+            }
+        }
+
+        compound
+        {
+            channel  ( segment 0 view 0 )
+            attributes { stereo_mode ANAGLYPH }
+        }
+    }
+}

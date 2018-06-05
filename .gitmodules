@@ -1,0 +1,10 @@
+[submodule "rtneuron/rtneuron/cuda/cub"]
+	path = rtneuron/rtneuron/cuda/cub
+	url = https://github.com/NVlabs/cub
+
+[submodule "CMake/common"]
+	path = CMake/common
+	url = https://github.com/Eyescale/CMake
+[submodule "Pydoxine"]
+	path = Pydoxine
+	url = https://github.com/BlueBrain/Pydoxine

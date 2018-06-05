@@ -1,0 +1,33 @@
+# New in this release
+
+## New Features
+- Loading of .bin mesh files without circuit (<a href="https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-52">BBPRTN-52</a>)
+- Frame grabbing implemented in the Equalizer version.
+- Code adapted to new BBP-SDK report class.
+- Spatial partition is the new default mode for DB compounds in the
+  Equalizer version.
+
+## Enhancements
+- DB decompositions now support batches of targets with different
+  attributes. This allows, among other things, loading a collection of
+  targets with different colors from the command line.
+- Removed pre-1.2 Equalizer code.
+
+## Bug Fixes
+- <a href="https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-48">
+BBPRTN-48: Multilayer depth peeling doesn't render anything with latest
+NVIDIA driver on Linux.</a>
+- Fix a regression with colormap rendering in the GUI
+
+## Known Bugs
+- All Jira tickets :) plus
+  - In the Equalizer version some parallel rendering modes are
+    incompatible with stereo.
+  - DB decompositions only works with a single channel per node (there is
+    only one scene per node). For multi-GPU machines a node per GPU is
+    required. Although not trivial, it is possible to allow multiple
+    channels per node, each one with its own scene range, this may be
+    allowed in future versions.
+  - In DB composition, switching from a camera path to the trackball
+    manipulator and then pressing space does not produce a consistent
+    home position in all nodes.

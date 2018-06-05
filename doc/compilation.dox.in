@@ -1,0 +1,289 @@
+/* Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+ *                           Blue Brain Project and
+ *                          Universidad Politécnica de Madrid (UPM)
+ *                          Juan Hernando <juan.hernando@epfl.ch>
+ *
+ * This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/**
+
+\htmlonly
+
+<style type="text/css" media="screen, projection">
+pre {
+    padding: 0.5em;
+    border: 1px dashed #2f6fab;
+    color: black;
+    background-color: #f9f9f9;
+    line-height: 1em;
+}
+
+#note {
+    position: relative;
+}
+#note span {
+    display: none;
+}
+#note a span {
+    display: none;
+    color: #FFFFFF;
+}
+#note a span span {
+    display: none;
+}
+#note a:hover span span {
+    display: none;
+}
+#note a:hover span {
+    display: block;
+    position: absolute;
+    width: 20em;
+    background-color: #aaa;
+    left: 1em;
+    top: -5px;
+    color: #FFFFFF;
+    padding: 5px; }
+</style>
+\endhtmlonly
+
+\page compilation Building RTNeuron
+
+\section rtneuron_compilation Building from source.
+
+This guide has been written for Ubuntu and RHEL distributions, nonetheless,
+except for the installation of the dependencies (which should be very similar
+for all Debian or Red Hat based distributions), the rest of the steps should be
+very similar for any UNIX style operating system. The code is platform
+independent but due to lack of demand from Windows users it is not guaranteed
+to compile in MSVC.
+
+RTNeuron depends on several in-house and third party libraries. Some of these
+dependencies are optional when compiling from source. The basic dependencies
+are:
+
+\htmlonly
+<table id="depends_table" style="width: 90%;">
+<col style="width: 20%; valign: top;"/>
+<col style="width: 18%; valign: top;"/>
+<col style="width: 18%; valign: top;"/>
+<col style="width: 24%; valign: top;"/>
+<tr>
+<th>Dependency</th>
+<th>Official Ubuntu package</th>
+<th>Official Redhat package</th>
+<th>Other software channel</th>
+</tr>
+
+<tr class="even">
+<td>CMake 2.8 (preferably > 2.8.7)</td>
+<td>cmake</td>
+<td>cmake28</td>
+<td>-</td>
+</tr>
+
+<tr>
+<td>Boost = 1.58, with:<ul style="margin: 0px">
+  <li>filesystem</li>
+  <li>regex</li>
+  <li>python</li>
+  <li>system</li>
+  <li>serialization</li>
+  <li>thread</li>
+  <li>unit_test_framework</li>
+</ul></td>
+<td>libboost-dev, libboost-filesystem-dev,
+  libboost-regex-dev, libboost-python-dev, libboost-system-dev,
+  libboost-serialization-dev, libboost-test-dev, libboost-thread-dev</td>
+<td>boost-devel</td>
+<td>-</td>
+</tr>
+
+<tr class="even">
+<td>BBP-SDK ${BBPSDK_VERSION}</td>
+<td>-</td>
+<td>-</td>
+<td>Git: ssh://bbpcode.epfl.ch/common/BBPSDK.git</td>
+</tr>
+
+<tr>
+<td>Brion ${BRION_VERSION}</td>
+<td>-</td>
+<td>-</td>
+<td>Git: ssh://bbpcode.epfl.ch/common/Brion.git</td>
+</tr>
+
+<tr class="even">
+<td>Collage ${COLLAGE_VERSION}</td>
+<td>-</td>
+<td>-</td>
+<td>Git: https://github.com/Eyescale/Collage.git</td>
+</tr>
+
+<tr>
+<td>Equalizer ${EQUALIZER_VERSION}</td>
+<td>-</td>
+<td>-</td>
+<td>Git: https://github.com/Eyescale/Equalizer.git</td>
+</tr>
+
+<tr class="even">
+<td>Git</td>
+<td>git</td>
+<td>git</td>
+<td>-</td>
+</tr>
+
+<tr>
+<td>Lunchbox ${LUNCHBOX_VERSION} (optionally with zeronconf support)</td>
+<td>libavahi-client-dev for zeroconf</td>
+<td>avahi-client-devel for zeroconf</td>
+<td>Git: https://github.com/Eyescale/Lunchbox.git</td>
+</tr>
+
+<tr class="even">
+<td>Numpy</td>
+<td>python-numpy</td>
+<td>numpy</td>
+<td>-</td>
+</tr>
+
+<tr>
+<td>OpenSceneGraph >= 3.2</td>
+<td>libopenscenegraph-dev</td>
+<td>OpenSceneGraph-devel</td>
+<td>-</td>
+</tr>
+
+<tr class="even">
+<td>osgTransparency ${OSGTRANSPARENCY_VERSION}</td>
+<td>-</td>
+<td>-</td>
+<td>Git: ssh://bbpcode.epfl.ch/viz/osgTransparency.git</td>
+</tr>
+
+<tr>
+<td>Python >= 2.7</td>
+<td>libpython2.7-dev</td>
+<td>python-devel</td>
+<td>-</td>
+</tr>
+
+<tr class="even">
+<td>vmmlib ${VMMLIB_VERSION}</td>
+<td>-</td>
+<td>-</td>
+<td>Git: https://github.com/Eyescale/vmmlib.git</td>
+</tr>
+
+</table>
+\endhtmlonly
+
+Optional dependencies are:
+
+\htmlonly
+<table id="depends_table" style="width: 90%;">
+<col style="width: 20%; valign: top;"/>
+<col style="width: 18%; valign: top;"/>
+<col style="width: 18%; valign: top;"/>
+<col style="width: 24%; valign: top;"/>
+<tr>
+<th>Dependency</th>
+<th>Official Ubuntu package</th>
+<th>Official Redhat package</th>
+<th>Other software channel</th>
+</tr>
+
+<tr class="even">
+<td>CUDA SDK</td>
+<td>nvidia-cuda-dev</td>
+<td>cudatoolkit</td>
+<td>-</td>
+</tr>
+
+<tr>
+<td>Doxygen 1.8: to build the documentation</td>
+<td>doxygen</td>
+<td>dpxygen</td>
+<td>-</td>
+</tr>
+
+<tr class="even">
+<td>Sphinx >= 0.6.6: for Python console help</td>
+<td>python-sphinx</td>
+<td>python-sphinx</td>
+<td>-</td>
+</tr>
+
+<tr>
+<td>VRPN</td>
+<td>-</td>
+<td>-</td>
+<td><a href="http://www.cs.unc.edu/Research/vrpn/obtaining_vrpn.html">Official page</a></td>
+</tr>
+
+<tr class="even">
+<td>Wiiuse 0.14: for Wiimote support</td>
+<td>-</td>
+<td>-</td>
+<td>Git: https://github.com/jafyvilla/wiiuse.git</td>
+</tr>
+
+<tr>
+<td>Bluez</td>
+<td>bluez</td>
+<td>bluez-libs-devel</td>
+<td>-</td>
+</tr>
+
+<tr class="even">
+<!-- No automatic versioning as this is not part of the release process yet -->
+<td>ZeroEQ 0.1: for network communication support</td>
+<td>-</td>
+<td>-</td>
+<td>Git: https://github.com/HBPVis/ZeroEQ.git</td>
+</tr>
+</table>
+\endhtmlonly
+
+The whole dependency tree (including optional dependencies) can be
+found <a href="https://bbpcode.epfl.ch/code/gitweb?p=common/Documentation.git;a=blob;f=images/RTNeuron.png">here</a>.
+
+The process for building from source is the following:
+
+\verbatim
+git clone --recursive ssh://bbpcode.epfl.ch/viz/RTNeuron.git
+mkdir RTNeuron/build
+cd RTNeuron/build
+cmake .. -DCLONE_SUBPROJECTS=ON -DCMAKE_BUILD_TYPE=Release
+make
+\endverbatim
+
+Once the build finishes, the \c rtneuron application will be available in
+RTNeuron/build/bin.
+
+The configuration will try to find the dependencies as system installed
+packages automatically. For some of the dependencies which, the configuration
+will download the source code and build them if they are not available. If the
+configuration process fails to find the system wide version of a dependency,
+first of all verify that you have installed the right version. If you still
+need to build the dependency (e.g. you are working on an unsupported platform
+or there's no binary package available as with VPRN), you will probably need
+to install additional libraries and headers in order to successfully build
+it from source. Explaining the whole dependency tree is out of scope of this
+guide.
+
+*/

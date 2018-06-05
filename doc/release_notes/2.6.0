@@ -1,0 +1,58 @@
+# Introduction
+
+This is a regular maintenance release with minor changes. The most
+importante change is that the reference of the Python API is now also
+generated and uploaded.
+
+# New in this release
+
+## New Features
+  - <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-398>
+    BBPRTN-398</a>: --unique-morphologies enables a conservative memory
+    usage mode by which meshes are loaded on demand. Also, rtneuron-app.py
+    detects if morphologies are unique, saving the user from having to
+    specify the option
+  - Three new functions have been added to the Python module
+    util.camera.Paths to create rotational camera paths:
+    - \c rotate_around creates camera path that rotates around a set of
+      circuit targets.
+    - \c front_to_top_rotation creates camera path that rotates from front
+      to top view of a set of circuit targets.
+    - \c rotation creates rotations about arbitrary axis with an initial
+      point and a camera fixation point.
+    .
+  - Added a method to query and modify subsets of scene objects (obtain a
+    subset handler from a scene object handler). At the moment, this is
+    only implemented for neuron objects. The feature is available through
+    the C++ and Python APIs.
+  - Added support for new VRPN tracker devices: Gyration mouse and
+    Intersense.
+  - The C++ API public headers are now part of the installed package.
+  - Added CameraBroker class to synchronize the camera between different
+    applications, or several instances of the same application.
+## Enhancements
+  - <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-398>
+    BBPRTN-398</a>: Reduced memory cosumption in multi-node configurations
+    using DB mode and unique morphologies. This is achieved loading meshes
+    on demand and discarding the data from BBPSDK after the mesh has been
+    processed.
+  - RTNEURON_SHADER_PATH and OSGTRANSPARENCY_SHADER_PATH automagically
+    set at module load time is they are not present. This solves the
+    problem of having to add them manually to the GNU module file.
+## Optimizations
+  - Improved loading times using --unique-morphologies by using all
+    the availables CPU cores.
+## API Changes
+  - Added the signal Camera::viewDirty, emitted when the model view matrix
+    is chaged from the rendering engine or using Camera::setViewLookAt or
+    Camera::setView.
+## Documentation
+  - Python API and helper module documentation generated with Sphinx
+    has been added. Links from the user guide to the C++ reference guide
+    have been replaced to point to the new Python reference.
+  - Documentation revised and updated.
+## Bug Fixes
+  - Fixed a performance problem with transparency and 2D decomposition modes
+    with high resolution destination channels.
+  - Bugfixes in octree based view frustum culling.
+  - Fixes for regular expresions in --target with multi-node configurations.

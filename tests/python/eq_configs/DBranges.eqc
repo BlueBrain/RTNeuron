@@ -1,0 +1,66 @@
+#Equalizer 1.1 ascii
+
+server
+{
+    connection { hostname "localhost" }
+    config
+    {
+        appNode
+        {
+            connection { hostname "localhost" }
+            pipe
+            {
+                window
+                {
+                    attributes
+                    {
+                        hint_drawable FBO
+                    }
+                    viewport [ 0 0 320 320 ]
+                    channel { name "channel1" }
+                }
+            }
+        }
+
+        observer {}
+
+        layout { name "0-0.5" view { observer 0 }}
+        layout { name "0.25-0.5" view { observer 0 }}
+        layout { name "0.25-0.375" view { observer 0 }}
+
+        canvas
+        {
+            layout "0-0.5"
+            layout "0.25-0.5"
+            layout "0.25-0.375"
+
+            wall
+            {
+                bottom_left  [ -.32 -.32 -.75 ]
+                bottom_right [  .32 -.32 -.75 ]
+                top_left     [ -.32  .32 -.75 ]
+            }
+
+            segment
+            {
+                channel "channel1"
+            }
+        }
+
+        compound
+        {
+            channel (canvas 0 segment 0 layout "0-0.5" view 0)
+            range [ 0.0 0.5 ]
+        }
+        compound
+        {
+            channel (canvas 0 segment 0 layout "0.25-0.5" view 0)
+            range [ 0.25 0.5 ]
+        }
+        compound
+        {
+            channel (canvas 0 segment 0 layout "0.25-0.375" view 0)
+            range [ 0.25 0.375 ]
+        }
+    }
+}

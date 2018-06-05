@@ -1,0 +1,48 @@
+#Equalizer 1.1 ascii
+
+server
+{
+    connection { hostname "localhost" }
+    config
+    {
+        appNode
+        {
+            pipe
+            {
+                window
+                {
+                    viewport [ 100 100 256 256 ]
+                    channel { name "channel1" }
+                }
+            }
+        }
+
+        observer
+        {
+        }
+
+        layout
+        {
+            name "simple"
+            view
+            {
+                observer 0
+                wall
+                {
+                    bottom_left  [-0.3 -0.3 -1.0]
+                    bottom_right [ 0.3 -0.3 -1.0]
+                    top_left     [-0.3  0.3 -1.0]
+                }
+            }
+        }
+
+        canvas
+        {
+            layout "simple"
+            segment
+            {
+                channel "channel1"
+            }
+        }
+    }
+}

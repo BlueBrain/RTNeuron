@@ -1,0 +1,111 @@
+#Equalizer 1.1 ascii
+
+server
+{
+    connection { hostname "localhost" }
+    config
+    {
+        appNode
+        {
+            connection { hostname "localhost" }
+            pipe
+            {
+                window
+                {
+                    attributes
+                    {
+                        hint_drawable FBO
+                        planes_samples 16
+                    }
+                    viewport [ 100 100 840 525 ]
+                    channel { name "channel1" }
+                }
+            }
+
+            pipe
+            {
+                window
+                {
+                    attributes
+                    {
+                        hint_drawable FBO
+                        planes_samples 16
+                    }
+                    viewport [ 100 100 840 525 ]
+                    channel { name "channel2" }
+                }
+            }
+        }
+
+        observer {}
+        layout { view { observer 0 } }
+
+        canvas
+        {
+            layout 0
+            wall
+            {
+                bottom_left  [-0.8 -0.5 -1.0]
+                bottom_right [ 0.8 -0.5 -1.0]
+                top_left     [-0.8  0.5 -1.0]
+            }
+
+            segment
+            {
+                channel "channel1"
+            }
+        }
+
+        compound
+        {
+            channel (canvas 0 segment 0 layout 0 view 0)
+
+            compound
+            {
+                compound
+                {
+                    range [ 0.0 0.5 ]
+                    outputframe
+                    {
+                        name "top.channel1"
+                        buffers  [ COLOR ]
+                        viewport [ 0.0 0.5 1.0 0.5 ]
+                    }
+                }
+                inputframe
+                {
+                    name "bottom.channel2"
+                }
+            }
+
+            compound
+            {
+                channel  "channel2"
+
+                compound
+                {
+                    range    [ 0.5 1.0 ]
+                    outputframe
+                    {
+                        name     "bottom.channel2"
+                        buffers  [ COLOR ]
+                        viewport [ 0.0 0.0 1.0 0.5 ]
+                    }
+                }
+                inputframe
+                {
+                    name     "top.channel1"
+                }
+                outputframe
+                {
+                    name     "top"
+                    viewport [ 0.0 0.5 1.0 0.5 ]
+                }
+            }
+            inputframe
+            {
+                name "top"
+            }
+        }
+    }
+}

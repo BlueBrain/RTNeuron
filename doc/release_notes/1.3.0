@@ -1,0 +1,56 @@
+# Introduction
+
+## Features Features
+
+This release is a transition release between 1.2.1 and the new version
+which will be based on a C++ code wrapped in Python.
+
+Apart from several bugfixes, the most remarkable changes are that
+support of BlueHub has been dropped and the code has been ported to
+OpenSceneGraph 3.0.1.
+
+# New in this release
+
+## New Features
+- SpaceMouse and Wiimote support for navigation in Equalizer.
+
+## Enhancements
+- The code has been adapted to OSG 3.0.1. Support from previous OSG
+versions has been dropped
+- Transparency rendering has been factored out as a standalone project
+  (see <a href=https://bbpteam.epfl.ch/project/spaces/display/OSGTR/OSG+Transparency+-+Portal>OSG Transparency</a>)
+- BlueHub support has been dropped.
+- The build system now uses the scripts from common/CMake.
+- Improved stability in multinode Equalizer configuration.
+
+## Command line interface changes
+- Option --window has been renamed to --sim-window
+
+## Bug Fixes
+- Draw serialization bug in multi-threaded Equalizer configurations.
+- Spatial DB decompositions were broken (neurons could be missed).
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-37>
+  BBPRTN-37</a> Incorrect kd-tree partition if there are multiple targets
+  with different attributes (e.g. color)
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-56>
+  BBPRTN-56</a> Deadlock at startup of rtneuron.equalizer when simulation
+  is enabled and --no-gui is used.</a>
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-60>
+  BBPRTN-60</a> Spike rendering broken for spherical somas in current master
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-67>
+  BBPRTN-67</a> Octree-based view frustum culling not working with
+  DB decompositions
+- Hotfix for <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-31>
+  BBPRTN-31</a> rtneuron.equalizer deadlocks when switching on Eq
+  statistics.
+
+## Known Bugs
+- Jira Tickets
+- In the Equalizer version some parallel rendering modes are
+  incompatible with stereo.
+- DB decompositions only works with a single channel per node (there is
+  only one scene per node). For multi-GPU machines a node per GPU is
+  required.
+- In DB composition, switching from a camera path to the trackball
+  manipulator and then pressing space does not produce a consistent
+  home position in all nodes.

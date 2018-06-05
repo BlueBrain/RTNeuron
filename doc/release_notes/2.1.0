@@ -1,0 +1,35 @@
+# Introduction
+
+This release is a refinement and consolidation of the rendering library
+and Python wrapping of it first introduced in version 2.0.
+
+The main features still missing in the new core library are:
+- Addition of synapses, arbitrary models loadable by OSG and user
+  given polygonal meshes
+- mouse interaction.
+- 2D GUI (easily workaroundable with the Python shell).
+
+This is the last relase in which \c rtneuron.osgviewer will be included.
+The rational behind this decision is to provide a simplification of the
+core architecture.
+
+# New in this release
+
+## Command line interface changes
+
+- Synapse display options inside neuron targets are now ignored.
+- 'mesh' representation mode has been renamed to 'detailed' and
+  'neurolucida' representation mode has been renamed to 'skeleton'.
+  All namings are still supported but deprecated.
+- Added a new option to not load morphologies is possible
+  (--no-morphologies). Useful for soma only visualization of circuits
+  with unique morphologies.
+
+## Deprecation/dropped support
+
+- Last release including rtneuron.osgviewer
+- Removed pre Collage 0.8.0 and pre Equalizer 1.5.0 code
+
+## Bug Fixes
+
+- All non Jira tickets from release 2.0.0 have been addressed (?)

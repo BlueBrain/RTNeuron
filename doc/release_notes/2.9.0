@@ -1,0 +1,83 @@
+# Introduction
+
+RTNeuron 2.9.0 is a release that introduces many new features that improve
+the overall user experience. The most notable feature is that user-given
+color maps can now be applied to arbitrary neuron subsets. The demos provided
+by the --demo option have been greatly improved, including circuit and target
+selection dialogs among other things. Scene creation performance has also been
+notably increased in multi-core systems and several previous limitations about
+scenes have been lifted.
+
+# New in this release
+
+## New Features
+
+- Added a new Scene attribute to enable on-the-fly mesh generation for those
+  neurons for which the mesh cannot be loaded from a file.
+  The attribute is assigned and construction and is read only. It's set to
+  true by default.
+- Added a new demo to demonstrate the different color schemes and their
+  parameters.
+- Apart from the color maps at the view level, color maps can also be specified
+  for neuron scene handlers. This is done using a \c colormaps attribute, which
+  is a nested AttributeMap where the user can set the ColorMaps.
+
+## Enhancements
+
+- Update operations on neuron targets now are also distributed to rendering
+  clients.
+- ColorMap can now be used as attribute values in AttributeMap in both
+  C++ and Python.
+- Synchronization of selections between RTNeuron and other applications is
+  now also supported in the GUI.
+- Some restrictions on neuron display modes have been lifted. In particular,
+  for neuron objects created with soma only mode, it's now possible to
+  upgrade them to no axon and whole neuron modes. Upgrading from no axon to
+  whole neuron is still not possible.
+- On demand morphology loading when necessary. This applies to display modes
+  upgrades from soma only when --no-morphologies was used.
+- View::snapshot can capture snapshots in multi-channel configurations.
+
+## Optimizations
+
+- Scene creation optimized to fully utilize the cores available. The low speed
+  up seen so far was due to thread-contentation accessing shared caches.
+
+## Examples
+
+- Added a progress indicator to the scene creation in the color_schemes demos
+- The projections demo can now connect to NeuroScheme and display synaptic
+  projections as requested from there. The GUI also includes some sliders
+  to adjust the visual appereance of the different cell sets. Additionally,
+  the demo now uses on demand model creation. It still loads all the
+  morphologies because they are needed for branch level culling.
+
+## API Changes
+
+- New attribute in View to store the color maps. The attribute is
+  called \c colormaps and it is a nested AttributeMap whose attributes
+  must be ColorMap objects. The only two supported color maps
+  are \c compartments and \c spikes.
+- The methods View::setColorMap, View::getColorMap, View::setSpikeColorMap
+  and View::getSpikeColorMap as well as their associated Python properties
+  have been deprecated.
+- Added the method Camera::projectPoint and its wrapping to translate 3D world
+  points into 2D camera relative coordinates.
+- Added method in AttributeMap to support registration of user defined types
+  including to/from Python support. The changes are mainly internal but will
+  allow new user features.
+- Added a method AttributeMap::copy to copy attributes from one map to another.
+- Added the class rtneuron::net::SceneEventBroker. This class provides a
+  ZeroEQ listener and publisher for scene related events. It partially
+  replaces SelectionBroker, which has been deprecated. The new class is more
+  flexible because it doesn't make any assumption about how to handle the events
+  and uses boost::signals to delegate.
+- Added a new member to Scene to mask out neurons and make them unselectable.
+- New attributtes for neuron object handlers: \c colormaps,
+  \c colormaps.compartments and \c colormaps.spikes.
+
+## Bug Fixes
+
+- The option --sim-window was being ignored.
+- Snapshots with transparent background now produce images without
+  premultiplied alpha as most image processing tools expect.

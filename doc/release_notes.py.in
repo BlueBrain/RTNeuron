@@ -1,0 +1,120 @@
+## Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+##                           Blue Brain Project and
+##                          Universidad Politécnica de Madrid (UPM)
+##                          Juan Hernando <juan.hernando@epfl.ch>
+##
+## This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+##
+## This library is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License version 3.0 as published
+## by the Free Software Foundation.
+##
+## This library is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along
+## with this library; if not, write to the Free Software Foundation, Inc.,
+## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import os
+import re
+import subprocess
+
+from six import StringIO
+
+release_notes_dir = "${PROJECT_SOURCE_DIR}/doc/release_notes"
+
+def fill_release_number(release):
+    if '.' not in release:
+        return release
+    return '%.02d%.02d%.02d' % tuple(map(int, release.split('.')))
+
+all_notes = os.listdir(release_notes_dir)
+all_notes.sort(reverse=True, key=fill_release_number)
+
+def find_tag_date(tag):
+    date = subprocess.check_output(
+        ["${GIT_EXECUTABLE}", "--git-dir", "${PROJECT_SOURCE_DIR}/.git",
+         "log", "-1", "--format=%ad", "--date=rfc", tag],
+        stderr=subprocess.DEVNULL)
+    date = str(date).split()
+    return " (%s-%s-%s)" % (date[1], date[2], date[3])
+
+def write_release_notes(output, filename):
+
+    if filename != 'master':
+        try:
+            date = find_tag_date(filename)
+        except:
+            try:
+                date = find_tag_date("release-" + filename)
+            except:
+                date = None # Unknown date, unreleased tag?
+    else:
+        date = None
+
+    notes = open(release_notes_dir + '/' + filename)
+
+    # Write the release section
+    output.write("\section release_notes_")
+    release_label = re.sub("\.", "_", filename)
+    output.write(release_label)
+    output.write(" Release " + filename)
+    if date:
+        output.write(date)
+    output.write('\n')
+
+    # Read the file contents to write the index and amend the headings
+    pattern = re.compile("[ \t]*(#+) ?(.*)")
+    content = StringIO()
+    for line in notes:
+        match = re.match(pattern, line)
+        if match:
+            level = len(match.group(1))
+            heading = match.group(2)
+            label = re.sub("[ /-]", "_", heading) + "_" + release_label
+            for i in range(level):
+                output.write("  ")
+            output.write("-# \\ref " + label + "\n")
+            # Amending the heading
+            line = ("\\" + "sub" * level + "section " +
+                    label + " " + heading + "\n")
+
+        if line != '\n':
+            content.write("  ")
+        content.write(line)
+
+    # Dumping the notes
+    output.write(content.getvalue())
+    output.write("""
+  \htmlonly
+  <hr>
+  \endhtmlonly
+
+""")
+
+output = open("${PROJECT_BINARY_DIR}/doc/release_notes.dox", "w")
+output.write("""
+namespace bbp
+{
+namespace rtneuron
+{
+
+/*!
+
+\page release_notes Release Notes
+
+""")
+
+for notes in all_notes:
+    if notes == "template":
+        continue
+    write_release_notes(output, notes)
+
+output.write("""*/
+}
+}
+""");
+

@@ -1,0 +1,36 @@
+# Introduction
+
+# New in this release
+
+## New Features
+
+- Added a new command line application called morphology-collage to generate
+  collections of images to show the positioning of morphology type instances in
+  relation to layer/region boundaries.
+- New button in the connectivity browser to hide/show the neurons connected
+  to a cell when only a pre/post synaptic cell has been picked.
+
+## Enhancements
+
+- When built without CUDA support or run with the --no-cuda option, branch
+  level clipping and no axon display modes are now also available.
+- Model size hint calculation improved. This improves the appearance when
+  switching from perspective to orthographic projection.
+
+## API Changes
+
+- New function Scene::getClipPlane to query the equation of a clipping plane
+  previously set.
+
+## CLI Changes
+
+- The --target command line option now accepts a %percentage suffix after target
+  names to reduce the target size to a given fraction randomly sampled.
+
+## Bug fixes
+
+- Fixed lost scene operations when applied before the internal scene
+  representation is created.
+- Consider the second axon section instead of the first one for unreported
+  actions sections in simulation mapping.
+

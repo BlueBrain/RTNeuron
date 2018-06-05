@@ -1,0 +1,44 @@
+# Introduction
+
+## Features
+  - The latest release of RTNeuron provides the following major
+    features and improvements:
+    - User guide and references embedded in the doxygen documentation.
+    - Removal of Queued objects in preparation to dash adaption.
+    - Round-robin DB decomposition for sort-last rendering
+    - K-d tree based DB decomposition for sort-last rendering
+    - Deferred data loading in Equalizer.
+
+# New in this release
+
+## New Features
+  - Round robin and k-d tree based decompositions for sort-last
+    parallel rendering.
+    There are some limitations as described below.
+
+## Documentation
+  - New user guide included as part of the Doxygen documentation.
+
+## Optimizations
+  - All time multiplexing buffering using Queued objects has been removed.
+    This is not an optimization but a step towards the development of a
+    use case for dash.
+  - Deferred data loading in the Equalizer build. Now, all nodes load
+    the data during the frame start of the second frame, after all
+    channels have annotated the DB ranges they need.
+
+## Bug Fixes
+  - LOD selection is now consistent across channels as long as the final
+    segment is planar.
+
+## Known Bugs
+  - In the Equalizer version some parallel rendering modes are
+    incompatible with stereo.
+  - DB decompositions only works with a single channel per node (there is
+    only one scene per node). For multi-GPU machines a node per GPU is
+    required. Although not trivial, it is possible to allow multiple
+    channels per node, each one with its own scene range, this may be
+    allowed in future versions.
+  - In DB composition, switching from a camera path to the trackball
+    manipulator and then pressing space does not produce a consistent
+    home position in all nodes.

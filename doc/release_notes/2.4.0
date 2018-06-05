@@ -1,0 +1,114 @@
+# Introduction
+
+This is a feature & bug fix release with numerous improvements on synapse
+display, simulation playback, camera handing, optimizations for unique
+morphologies, and improvements of the Python API.
+
+As an important change, this is the first release which does not include
+the old osgViewer based application, \c rtneuron.osgviewer. If you need it,
+it will be still available in the vizcluster as a module. You can load it by
+typing: module load RTNeuron-snapshot/rtneuron.osgviewer.
+
+# New in this release
+
+## New Features
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-221>
+  BBPRTN-221</a>: An option to choose between placing synapses on the
+  cell surface (as computed by blue detector) or on the branch segment.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-133>
+  BBPRTN-133</a>: Cell picking.
+- Added RTNeuron::useLayout to change the Equalizer layout programmatically
+- Combining --no-lod and --no-meshes is now possible.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-271>
+  BBPRTN-271</a>: Added rtneuron.util.camera.PathRecorder to register
+  camera paths using wall clock time.
+- Added a simple camera path generation module rtneuron.util.camera.Paths.
+- Added the module rtneuron.util.camera.Ortho to help setup front and top
+  orthographic projections.
+- Added a method to CameraPathManipulator to retrieve interpolated key
+  frames from a camera path.
+- Single key frame camera paths do not stop frame recording started by
+  \c --grab-frames.
+- Added some developer options for profiling.
+
+## Enhancements
+- No need to use vglrun when rtneuron-app.py is invoked from the
+  cluster. When connecting with vglconnect to bbplxvizXX Virtual GL will
+  be setup automatically.
+- Compilation fixes for OpenSceneGraph 3.2
+
+## Optimizations
+- Hard clipping for unique morphologies. This allows to reduce the
+  memory footprint in DB decompositions
+
+## API Changes
+- RTNeuron::createConfig and RTNeuron::exitConfig renamed to
+  RTNeuron::init and RTNeuron::exit respectively. The previous methods
+  are kept as deprecated.
+- Added new methods:
+  - RTNeuron::useLayout
+  - View::computeHomePosition
+  - CameraPathManipulator::getKeyFrame
+  - Camera::getProjectionOrtho
+  .
+- New attributes to methods:
+  - In RTNeuron::RTNeuron: profile
+  - In Scene::Scene: \c mesh_based_partition and \c unique_morphologies
+  - In Scene::addAfferentSynapses: \c surface
+  .
+- New class attributes:
+  - In View: \c model_scale. Which helps in the specification of
+    orthographic frustums.
+  .
+.
+
+Changes in the Python API
+- New Python functions and objects:
+  - rtneuron.apply_compartment_report and rtneuron.apply_spike_data to
+    facilitate simulation setup in a scene.
+  - rtneuron.util.camera.Ortho module including functions make_front_ortho
+    and make_top_ortho.
+  - rtneuron.util.camera.PathRecorder class
+  - rtneuron.util.camera.Paths module including functions front_view,
+    top_view and flythrough.
+  .
+- Wrapping:
+  - Wrapping of get/set member functions of CameraPathManipulator
+    changed to use properties instead of methods.
+  - Wrapping of Camera::getProjectionPerspective and
+    Camera::getProjectionOrtho
+  .
+
+## Command line interface changes
+- Added the following options:
+  - --unique-morphologies
+  - --mesh-based-partition
+  - --color-map 'filename'
+  .
+
+## Deprecation/dropped support
+- Removed rtneuron.osgviewer
+
+## Bug Fixes
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-74>
+  BBPRTN-74</a>: Invisible Neurons are highlighted in mouse-over.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-92>
+  BBPRTN-92</a>:  Disable idle AA during simulation playback
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-97>
+  BBPRTN-97</a>: Missing report playback with non-rendering appNode.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-107>
+  BBPRTN-107</a>: Changing the representation mode from detailed to soma
+  makes cells dissapear if --no-lod is given.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-123>
+  BBPRTN-123</a>: Autocompute camera home position broken if only displaying
+  synapses
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-174>
+  BBPRTN-174</a>: CUDA culling broken in some 2D decompositions.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-220>
+  BBPRTN-220</a>: Synapse radius affects culling
+- Bug fixes in subpixel compounds when idle AA is disabled.
+- Fix efferent synapse loading using display_synapses.
+- Fixed frame grabbing combined with simulation playback.
+- Workaround to ensure that Boost python shared_ptr deallocators grab
+  the GIL before executing. As far as I know this only works with ELF-style
+  dynamic linking.

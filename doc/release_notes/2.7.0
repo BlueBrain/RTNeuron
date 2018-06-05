@@ -1,0 +1,159 @@
+# Introduction
+
+This release adds a lot of exciting new features, specially: a prototype
+GUI overlay, high resolution offscreen snapshots, connectivity with NEST
+for stream-based spike visualization and fine grained neuron clipping with
+user defined masks.
+
+This release includes also quite a few other improvements, fixes and small
+minor features. The description of all the changes can be found below.
+
+# New in this release
+
+## New Features
+- This release includes a first prototype GUI based on Qt4 and QML.
+  The GUI is an overlay that provides simple control of simulation playback
+  and some view/scene options and it can be enabled with the command line
+  option --gui.
+- High-resolution offscreen snapshots. Apart from the regular snapshot
+  function, a new function has been added to take offscreen snapshots
+  allowing a different resolution from the main window resolution. This
+  snapshot maintains the vertical field of view of the main window.
+- Added support for spike stream reports.
+- A new class (NeuronClipping) has been added to do clipping operations on
+  neurons. It lets the user select clip/unclip regions at sub-branch level
+  and then apply them to object handlers associated with single neurons.
+  Clipping requires view frustum culling to be active (the default) and
+  is not permament (soft clipping), so it can be changed arbitrarily.
+  Clipping is compatible with branch order visibility and sort-last scene
+  decompositions using spatial partitions. This class has been added
+  inside a new namespace/module called rtneuron.sceneops. In Python this
+  module contains a class called SynapticProjections to show its
+  capabilites.
+- Added SelectionBroker class to synchronize selections between different
+  applications, or several instances of the same application. This class
+  allows the configuration of the display mode of unselected and selected
+  neurons.
+- Improved simulation window management with better automatic adjustment.
+  The window can still be set manually, which turns off auto-adjustment.
+- Added a command line option and Python module function to start up
+  a demo. Both the option and the function take the demo name as an
+  optional parameter. The only demo implemented so far is called
+  'projections'. It loads a default circuit and shows anterograde and
+  retrograde synaptic pathways when clicking on neuron somas.
+- Highlighting code revamped. The text label overlays have been
+  temporarily removed to be added again in the Qt GUI later on. The
+  visual appearance of highlighting has also been modified. Now the color
+  of the selected neurons is modified instead of drawing an outline (the
+  outline was problematic for many reasons). The highlighting color can
+  be configured in the view. This color replaces the object color if no
+  simulation is being displayed. If simulation is displayed
+  the highlighting color is added to the simulation color.
+
+## Enhancements
+- Environmental variables for OSG Transparency are now propagated from
+  the application node to rendering clients in multinode configurations.
+- Changing the simulation timestamp from the Python console while the
+  simulation is playing back now works reliably.
+- Idle AA is now enabled in rtneuron-app.py with 16 steps by default.
+
+## Optimizations
+- Loading time has been optimized using multiple cores. This is specially
+  relevant for unique morphologies.
+
+## Examples Examples
+- Added the Python example \c examples/python/anterograde_retrograde.py
+  that shows how mouse selections can be processed to change the display
+  mode of neurons based on connectivity information. The example can be
+  run as a standalone script or imported as a module from the Python shell
+  of \c rtneuron-app.py.
+
+## API Changes
+- Added the attribute auto_adjust_simulation_window to the RTNeuron class
+  to turn on/off automatic adjustment of the simulation playback window
+  based on active reports.
+- View::snapshot has been overloaded with two additional functions: one
+  with a explicit resolution and other with scale factor of the main
+  window resolution.
+- Added a new public signal to AttributeMap. The purpose of this signal
+  is to allow the implementation of the ModelViewController pattern for
+  GUIs.
+- New Camera functions:
+  - getProjectionFrustum() to get the parameters of a perspective
+    projection frustum.
+  - isOrtho()
+- Added new signals to SimulationPlayer:
+  - playbackStateChanged: This signal deprecates
+    SimulationPlayer::finished. The state transitions are documented in
+    the reference.
+  - simulationDeltaChanged
+  - windowChanged
+- Added the method SimulationPlayer::adjustWindow() to adjust the
+  simulation playback window to the reports of the currently active
+  scenes.
+- Added the object Scene::ObjectOperation and the function
+  Scene::Object::apply. This is the abstract interface for arbitrary
+  operations on scene object handlers.
+
+  The API does not expose sufficient capabilities for client extensions,
+  its purpose is to allow the addition of object specific operations
+  without exposing the actual object types (which are hidden right now)
+  or any implementation details.
+
+  Operations are prepared to work in multi-node configurations.
+- Added two new overloads of Scene::highlight to accept a Cell_Target
+  and a Neurons container.
+- Added the attribute *highlight_color* to rtneuron::View to choose the
+  color to use for highlighted neurons.
+- Added the method Scene::getHighlightedNeurons.
+- ColorScheme::TRANSLUCENT removed.
+- The parameter 'far' has been removed from several Camera class functions.
+  This parameter was not used for anything by the implementation and will
+  not be used in the future. All signatures kept deprecated only in C++.
+
+Changes in the Python API
+- New Python functions and objects:
+  - A new package called rtneuron.sceneops has been added. This package
+    contains:
+    - The wrapping of NeuronClipping.
+    - A class called SynapticProjections that clips neuron branches based
+      on their post and pre synaptic pathways.
+    - Two helper functions for easily enabling and disabling transparent
+      rendering in a given scene.
+  - rtneuron.start_shell to facilitate launching an IPython shell from
+    a script. By default, the shell namespace is the rtneuron module
+    namespace.
+  - disconnectAll has been added to all Scene signals.
+  - New signals available in Python: AttributeMap.attributeChanged and
+    SimulationPlayer.playbackStateChanged.
+  - New function rtneuron.start_demo.
+  .
+
+## Command line interface changes
+- Added --gui to display the GUI overlay.
+- --idle-AA deprecated as this is now the default behaviour
+- Option parser migrated from optparse to argparse. This should not affect
+  users except for deprecated options that have been removed.
+- Added --vprn-manipulator. This option takes a JSON string or the filename
+  of a JSON file with the configuration of a VPRN manipulator. This option
+  is valid for all VPRN manipulators and replaces all previous options.
+- Options deprecated:
+  - --show-spikes (-s has been remapped to --spikes)
+  - --use-wiimote
+  - --use-spacemouse
+  .
+- Options removed:
+  - --color-axon-and-dendrites
+  - --translucency
+  - --use-intersense
+  - --use-gyrationmouse
+  .
+- Added the command line options --sync-selection and --track-selections to
+  setup a selection broker.
+- Added the option --sync-camera to setup a camera broker.
+- Added the option --rest to setup the REST interface.
+- The option --alpha-blending now accepts an optional argument to choose
+  the rendering algorithm to use.
+- Added the option --demo.
+- Added the option --convervative-loading to enforce conservative loading
+  even with non-unique morphologies.

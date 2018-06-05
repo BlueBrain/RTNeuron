@@ -1,0 +1,51 @@
+# Introduction
+
+## Features
+- The major features and improvements of RTNeuron 1.2.0 are:
+    - RPM packages for RHEL6.1 and debs for Ubuntu 11.10 are now provided.
+    Previous Ubuntun 11.04 package is also maintained.
+    - Now it is possible to build all artifacts from a single CMake
+    configuration.
+    - The minimum Equalizer version supported is now 1.2.0 and the minimum
+    CUDA version is 4.0.
+    - The performance of the culling algorithm has been improved based on
+    the adoption of CUDA 4.0. In the parallel version now each channel
+    uses the same GPU for rendering and culling (the GPU selection is
+    based on the screen number)
+
+# New in this release
+
+## Enhancements
+- Multiple CUDA devices now supported for CUDA-based culling. This only
+has effect in the Equalizer version of the tool.
+
+## Optimizations
+- Dispatching of view frustum culling CUDA kernels improved thanks to the
+adoption of CUDA 4.0. The overhead introduced by the global thread used
+for dispatching has been eliminated.
+- Early frame assembly implemented as dicussed in <a href="/project/issues/browse/BBPRTN-41">here</a>
+
+## Bug Fixes
+  - Tile generator for Producer config files fixed (now using a more proper configuration syntax).
+  - Fixed the install RPATH
+  - <a href="https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-35">
+  BBPRTN-35: Simulation playback broken</a>
+  - <a href="https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-33">
+  BBPRTN-33: Spatial DB only shows one brick in the dest channel</a>
+  - <a href="https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-44">
+  BBPRTN-44: New culling code causes &#39;invalid value&#39; OpenGL errors when LODs are used.</a>
+  - <a href="https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-24">
+  BBPRTN-24: Stereo Rendering</a> focus plane and units.
+
+## Known Bugs
+- All Jira tickets :) plus
+  - In the Equalizer version some parallel rendering modes are
+    incompatible with stereo.
+  - DB decompositions only works with a single channel per node (there is
+    only one scene per node). For multi-GPU machines a node per GPU is
+    required. Although not trivial, it is possible to allow multiple
+    channels per node, each one with its own scene range, this may be
+    allowed in future versions.
+  - In DB composition, switching from a camera path to the trackball
+    manipulator and then pressing space does not produce a consistent
+    home position in all nodes.

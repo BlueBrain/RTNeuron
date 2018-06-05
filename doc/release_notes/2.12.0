@@ -1,0 +1,69 @@
+# Introduction
+
+This release introduces the depth of field and user given clipping planes as new
+features.
+
+A new power application, called circuit_slicing, has been created for doing
+static circuit visualization with slicing.
+
+The culling code using skeleton octrees has been removed along with the
+associated options. This feature was not being used for quite some time and it
+had become an unnecessary complexity.
+
+# New in this release
+
+## New Features
+
+- Added the power application called circuit_slicing. This application allows
+  the user to load a circuit to be displayed in soma mode, choose cell subsets
+  to be render with full models (with different axon and dendrite colors) and
+  clip the scene with a pair of parallel planes whose position and separation
+  can be adjusted. It also includes a simulation player.
+- Screen space depth of field effect. This effect can only be enabled and
+  configured at runtime using View attributes. Some limitations apply: it only
+  works with opaque and different types of artifacts appear in multi-channel
+  configurations (e.g. tile borders became visible in 2D decompositions).
+- Arbitrary clip planes can be added to the scene using a new function of Scene.
+  This feature is not supported in combination with spatial DB decompositions.
+  In this case, the user clip planes will be ignored.
+- The overall color of polygonal models added to the scene from files can be
+  changed if the model doesn't provide any per vertex colors itself.
+- Apart from lines and polygonal meshes now it is also possible to add points
+  to a scene. Points can be displayed as spheres, square sprites or rounded
+  sprites.
+
+## Enhancements
+
+- The simulation player in the main GUI has been redesigned and improved. Now
+  it's possible to load compartment, spike reports or remove simulation.
+- The mode atttribute is not needed anymore when adding meshes to the scene,
+  the type of primitive is now inferred from the input parameters.
+
+## API Changes
+
+- New functions Scene::setClipPlane and Scene::clearClipPlanes
+- New Camera functions getViewMatrix, getProjectionMatrix and unprojectPoint
+- New View attribute \c depth_of_field.
+- Function Scene::addMesh renamed to Scene::addGeometry to reflect its new
+  capabilities. The old function has been kept, but deprecated.
+- Removed skeleton octree related scene attributes.
+- Scene::addModel can now take an optional color attribute. This attribute can
+  also be changed in model objects once added.
+- Added two new parameters to display_morphology_file to display the soma and
+  choose between tubelets and pseudo-cylinders.
+- Added a new parameter to show_anterograde_projections and
+  show_retrograde_projections of rtneuron.sceneops.SynapticProjections to
+  reduce post and pre synaptic cells to a subset of intereset.
+- Added a new function in rtneuron.util.camera to set the home position of
+  a view using a cell target.
+
+## Documentation
+
+- Added a new Python notebook to show how to add meshes and models to a scene.
+
+## Bug Fixes
+
+- Fixed crashes when upgrading the representation mode of a neuron with missing
+  mesh or morphology.
+- Fixed NameError exceptions in list comprehensions, functions and lambdas
+  inside the IPython shell.

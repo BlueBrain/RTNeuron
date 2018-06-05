@@ -1,0 +1,74 @@
+#Equalizer 1.1 ascii
+
+server
+{
+    connection { hostname "localhost" }
+    config
+    {
+        appNode
+        {
+            pipe
+            {
+                window
+                {
+                    viewport [ 0 0 640 640 ]
+                    channel
+                    {
+                        name "channel2"
+                    }
+                }
+                window
+                {
+                    viewport [ 650 0 640 640 ]
+                    channel
+                    {
+                        name "channel1"
+                    }
+                }
+            }
+        }
+
+        observer {}
+
+        layout{ view { observer 0 }}
+
+        canvas
+        {
+            layout 0
+
+            wall
+            {
+                bottom_left  [ -.32 -.32 -.75 ]
+                bottom_right [  .32 -.32 -.75 ]
+                top_left     [ -.32  .32 -.75 ]
+            }
+
+            segment
+            {
+                channel "channel1"
+            }
+        }
+
+        compound
+        {
+            buffer  [ COLOR DEPTH ]
+
+            channel (canvas 0 segment 0 layout 0 view 0)
+
+            compound
+            {
+                range [ 0.0 0.5 ]
+            }
+            compound
+            {
+                channel "channel2"
+                range [ 0.5 1.0 ]
+                outputframe { name "frame.channel2" }
+            }
+            inputframe
+            {
+                name "frame.channel2"
+            }
+        }
+    }
+}

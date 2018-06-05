@@ -1,0 +1,41 @@
+# Introduction
+
+This is mainly a bugfix release with some enhancements in the frame
+recording API.
+
+# New in this release
+
+## New Features
+- Support for loading and saving color maps in rtneuron-app.py. Old
+  color map files are still supported.
+
+## Enhancements
+- Improved API for frame control: new functions for waiting for finished
+frames and a field in RecordingParams to choose the number of frames to
+render (<a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-109>
+  BBPRTN-109</a>)
+- Improvements in view attribute handling.
+
+## Documentation
+Improved documentation on:
+- Color maps.
+- Camera handling and camera paths.
+- Frame grabbing.
+- Levels of detail.
+
+## Bug Fixes
+- Fixed a problem with color map range modification. If the range was
+  collapsed it was not possible to uncollapse it later.
+- Fixes for a regression in fixed camera path delta.
+- Fix for view attribute handling at start up
+  (<a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-185>
+   BBPRTN-185</a>).
+- Fixed the 1 frame latency problem in view attribute updates.
+- Fixes for frame recording.
+- Fixes for synapse display: radius and color selection of synapses
+  from the Python API, selection of afferent and efferent.
+- Fixed parsing of parameters for alpha-by-distance-to-soma color scheme.
+- Fixed the OpenGL errors caused by calling display_circuit multiple
+  times.
+- Fixed one crash at exit.
+- Fixes for --clod.

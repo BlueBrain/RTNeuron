@@ -1,0 +1,66 @@
+#Equalizer 1.1 ascii
+
+server
+{
+    connection
+    {
+        hostname "localhost"
+        port 5240
+    }
+
+    config
+    {
+        attributes
+        {
+            robustness OFF
+        }
+
+        appNode
+        {
+            pipe
+            {
+                window
+                {
+                    attributes
+                    {
+                        hint_drawable pbuffer
+                    }
+                    viewport [ 0 0 4096 4096 ]
+                    channel { name "channel1" }
+                }
+            }
+        }
+
+        observer
+        {
+            eye_base 0.1
+        }
+
+        layout
+        {
+            name "simple"
+            view
+            {
+                #mode STEREO
+                observer 0
+            }
+        }
+
+        canvas
+        {
+            layout "simple"
+
+            wall
+            {
+                bottom_left  [ -.32 -.32 -.75 ]
+                bottom_right [  .32 -.32 -.75 ]
+                top_left     [ -.32  .32 -.75 ]
+            }
+
+            segment
+            {
+                channel "channel1"
+            }
+        }
+    }
+}

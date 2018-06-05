@@ -1,0 +1,63 @@
+# Introduction
+
+# New in this release
+
+## New Features
+
+- Added a new demo/power app, called browse_connections, to analyze synaptic
+  pairs. This application allows the user to pick pre and post-synaptic cells
+  on a scene by clicking on their somas or typing their GIDs. Cells can be
+  additionally colorized and filtered by metype to facilitate selection.
+- The color maps applied by the "color by distance to soma" and "color by width"
+  coloring schemes are now configurable. The custom colormaps can be provided
+  in te \c colormaps attribute of the neuron handler.
+- Synapes are now selectable with the mouse. For the moment only single synapse
+  selections are possible.
+
+## Enhancements
+
+- Adaptations to new ZeroEQ auto-connection style using session filtering.
+- When the DB decomposition is not used, new objects can be added to a scene
+  without having to rebuild the whole scene to update it. When objects are
+  removed the scene still needs to be recreated from scratch.
+
+## CLI Changes
+
+- The options --sync-selections and --sync-camera now take an optional
+  argument with the ZeroEq session name.
+- The coloring mode alpha-by-width has been renamed to by-width
+- The coloring mode alpha-by-distance-to-soma has been renamed to
+  by-distance-to-soma
+- --demo help now prints the list of available demos.
+
+## API Changes
+
+- Added new constructors to CameraBroker and SceneEventBroker to take a
+  ZeroEQ session as input or use the default session.
+- ALPHA_BY_WIDTH_COLORS renamed to BY_WIDTH_COLORS and
+  ALPHA_BY_DISTANCE_TO_SOMA_COLORS renamed to BY_DISTANCE_TO_SOMA (the Python
+  wrapping names have been renamed accordingly).
+- New attributes for neuron object handlers: \c colormaps.by_distance_to_soma
+  and \c colormaps.by_width
+- Added the function \c rtneuron.snapshot_to_notebook to use inside a IPython
+  notebook to capture a snapshot and display it in the client browser.
+- New signal Scene::synapseSelected emitted when a synapse is hit by the pick
+  method.
+- Added the function \c rtneuron.display_empty_scene to the Python module.
+- New functions \c colorize_scene_with_targets and
+  \c colorize_neurons_with_targets in \c rtneuron.sceneops. These functions
+  can be used to colorize the neurons of a scene according to key-color pairs.
+
+## Bug fixes
+
+- [22351](https://bbpcode.epfl.ch/code/#/c/22351) Mouse wheel events now also
+  work with Qt GUIs.
+- [21973](https://bbpcode.epfl.ch/code/#/c/21973) Representation mode upgrades
+  from NO_DISPLAY to something else were not working.
+- [20704](https://bbpcode.epfl.ch/code/#/c/20704/) Applying compartment data
+  after having applied spike data was not updating properly the simulation
+  buffer offsets for somas.
+- [21445](https://bbpcode.epfl.ch/code/#/c/21445/) Fixed a special case of
+  representation mode upgrade from soma to whole neuron. The soma was not
+  displayed if a transition from soma to no display was made before the
+  upgrade.

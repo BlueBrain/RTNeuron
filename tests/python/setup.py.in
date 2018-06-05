@@ -1,0 +1,118 @@
+##
+## RTNeuron
+##
+## Copyright (c) 2006-2017 Cajal Blue Brain, BBP/EPFL
+## All rights reserved. Do not distribute without permission.
+##
+## Responsible Author: Juan Hernando Vieites (JHV)
+## contact: jhernando@fi.upm.es
+
+import os
+import sys
+
+import renderer
+
+prefix_paths = '${CMAKE_PREFIX_PATH}'.split(';')
+prefix_paths[:] = [item + '/${PYTHON_LIBRARY_SUFFIX}' for item in prefix_paths]
+sys.path = (['${CMAKE_BINARY_DIR}/lib',
+             '${CMAKE_INSTALL_PREFIX}/lib',
+             '${CMAKE_INSTALL_PREFIX}/${PYTHON_LIBRARY_SUFFIX}'] +
+            prefix_paths + sys.path)
+
+gpu_families = renderer.get_GPU_families()
+golden_sample_paths = \
+    ['${PROJECT_SOURCE_DIR}/tests/python/img/' + f + "/" for f in gpu_families]
+golden_sample_paths.append('${PROJECT_SOURCE_DIR}/tests/python/img/')
+medium_rect_eq_config = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/medium_rect.eqc'
+medium_eq_config = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/medium.eqc'
+small_rect_eq_config = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/small_rect.eqc'
+small_eq_config = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/small.eqc'
+DB_ranges_config = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/DBranges.eqc'
+vanilla_DB_config = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/2pipes.DB.eqc'
+direct_send_DB_config = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/2pipes.DS.eqc'
+eq_test_config_path = '${PROJECT_SOURCE_DIR}/tests/python/eq_configs/'
+misc_data_path = '${PROJECT_SOURCE_DIR}/tests/python/misc_data/'
+
+os.environ['EQ_WINDOW_IATTR_HINT_DRAWABLE'] = '-12' # FBO
+os.environ['EQ_WINDOW_IATTR_PLANES_SAMPLES'] = '16'
+os.environ['RTNEURON_INVARIANT_IDLE_AA'] = '1'
+os.environ['EQ_LOG_LEVEL'] = 'ERROR'
+
+from rtneuron import *
+import brain
+
+def setup_empty_scene(testcase, eq_config=medium_rect_eq_config):
+    testcase.engine = RTNeuron([])
+    testcase.scene = testcase.engine.createScene()
+    if eq_config:
+        testcase.engine.init(eq_config)
+    else:
+        testcase.engine.init()
+
+    testcase.view = testcase.engine.views[0]
+    testcase.view.scene = testcase.scene
+
+def setup_simple(testcase, target,
+                 scene_attributes=AttributeMap(),
+                 target_attributes=AttributeMap(),
+                 eq_config=medium_rect_eq_config,
+                 blue_config=brain.test.blue_config,
+                 engine_attributes=AttributeMap()):
+
+    testcase.engine = RTNeuron([], engine_attributes)
+    simulation = brain.Simulation(blue_config)
+    testcase.simulation = simulation
+
+    gids = util.key_to_gids(target, simulation)
+    testcase.gids = gids
+
+    testcase.scene = testcase.engine.createScene(scene_attributes)
+    testcase.scene.circuit = simulation.open_circuit()
+    testcase.scene.addNeurons(gids, target_attributes)
+    if eq_config:
+        testcase.engine.init(eq_config)
+    else:
+        testcase.engine.init()
+
+    testcase.view = testcase.engine.views[0]
+    testcase.view.scene = testcase.scene
+
+def setup_lod_scenes(testcase, lods, target_attributes=AttributeMap(),
+                     eq_config = medium_rect_eq_config):
+    # Merges the second attribute map into the first one
+    def merge(target, source) :
+        for attr in dir(source) :
+            target.__setattr__(attr, source.__getattr__(attr))
+
+    testcase.engine = RTNeuron([])
+    testcase.simulation = brain.Simulation(brain.test.blue_config)
+
+    testcase.scenes = {}
+    for name, lod, extra_attr in lods :
+        attributes = AttributeMap()
+        attributes.use_cuda = False
+        if extra_attr :
+            merge(attributes, extra_attr)
+        attributes.lod = AttributeMap()
+        attributes.lod.neurons = AttributeMap({lod : [0.0, 1.0]})
+        # Force the code to behave like before the BBSDK removal regarding the
+        # connection of lower level detail models to the soma.
+        attributes.force_mesh_loading = True
+        attributes.circuit = brain.test.blue_config
+        testcase.scenes[name] = testcase.engine.createScene(attributes)
+
+    for scene in testcase.scenes.values() :
+        scene.addNeurons([406], target_attributes)
+
+    testcase.engine.init(eq_config)
+    testcase.engine.resume()
+
+    view = testcase.engine.views[0]
+    view.camera.setView(
+        [87.08049011230469, 676.59033203125, 148.541748046875],
+        ([-0.16840891540050507, 0.9842529892921448, 0.053707364946603775],
+         40.37215805053711))
+    view.attributes.idle_AA_steps = 32
+    view.attributes.background = [0, 0, 0, 1]
+    view.attributes.auto_compute_home_position = False
+    testcase.view = view

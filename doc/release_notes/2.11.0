@@ -1,0 +1,43 @@
+# Introduction
+
+# New in this release
+
+## Enhancements
+
+- The browse_connection demo now also displays the synapses when a single
+  cell has been picked. The second cell can be selected by clicking on a
+  synapse and filtering based on selections on the legend also works for
+  synapses.
+- Camera manipulation is now possible using the cursor keys together with Ctrl
+  and Shift.
+- Network communication changed to use the new HBP/BBP ZeroBuf vocabulary
+  (project Lexis).
+
+## API Changes
+
+- The SelectionBroker class has been removed.
+- Removed deprecated overloads of Camera::setProjectionFrustum and
+  Camera::setProjectionOrtho.
+
+## CLI Changes
+
+- All the options related to the bucket depth peeling algorithm have been
+  removed.
+- The option --alpha-blending now chooses the best algorithm available if
+  no additional parameter is given.
+- New command line option --alpha-aware. This option enables alpha accumulation
+  related optimizations as supported by the alpha-blending algorithm chosen.
+  Not enabled by default because its efficacy is use case dependent.
+
+## Documentation
+
+- Added some IPython notebooks to the documentation to replace the old
+  Python tutorial.
+
+## Bug Fixes
+
+- The combination of --no-morpologies and soma only visualization was crashing
+  when simulation data was displayed.
+- [BBPRTN-533](https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-533):
+  In some cases synapse sets were not inmediately displayed after adding them
+  to the scene when there were already some synapses present.

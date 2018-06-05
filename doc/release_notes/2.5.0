@@ -1,0 +1,60 @@
+# Introduction
+
+This is a feature and bugfix release that introduces important
+new features and in combination with recent updates in Collage and Equalizer
+improves notably the reliability of the application when running in
+distributed mode.
+
+# New in this release
+
+## New Features
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-313>
+  BBPRTN-313</a>: Consider the alpha channel of the background for frame
+  capturing.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-314>
+  BBPRTN-314</a>: A new representation mode for neuron targets to not
+  display the axon of cells.
+- Added an optional parameter to util.camera.Path.make_*_view to adjust
+  the camera position using dendrites instead of somas.
+- Added a scene attribute to choose not to connect first order branches
+  to the soma (either the spherical or the detailed one).
+- Removed multiprocess DB flag from the default Equalizer configuration
+  parameters. This feature is now controlled by \c --eq-config-flags.
+- Added three new profiling options:
+  - 'readback' to skip frame readback.
+  - 'compositing' to skip frame assembly.
+  - 'channels' to profile and log per channel operations.
+  .
+- Added a free function to the Python console to display morphologies
+  directly from their .h5 file. The function is called
+   \c display_morphology_file, it creates a temporary circuit config to
+   load the morphology and display the morphological segments using
+   a tubelet model.
+- SpikeData moved to BBPSDK. A new option, \c --show-spikes, has been added
+  to show the spikes from the file pointed out by the BlueConfig.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-333>
+  BBPRTN-333</a>: A method to dynamically adjust neuron thickness to all
+  neurons inside a scene.
+- Added a REST interface which can be enabled with \c --rest host|IP:port,
+  which accepts PUT for CAMERA and REQUEST and exposes GET for HEARTBEAT,
+  IMAGEJPEG and VOCABULARY, according to ZeroEQ event definitions and the
+  corresponding vocabularies.
+
+## API Changes
+- Added two new attributes to control neuron surface inflation in a scene.
+  - \c inflatable_neurons added to Scene attributes to enable the feature.
+  - \c inflation_factor added to View attributes to set the absolute offset.
+- Added new class RestInterface which setups RESTBridge and the according
+  ZeroEQ subscriber and publisher to provide a REST interface to RTNeuron.
+
+## Bug Fixes
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-362>
+  BBPRTN-362</a>: Correct compositing in DB direct send configurations.
+- <a href=https://bbpteam.epfl.ch/project/issues/browse/BBPRTN-363>
+  BBPRTN-363</a>: Fixed a bug in culling with DB decompositions and
+  unique morphologies.
+- Fixed several CUDA related crashes at exit.
+- Fixed a crash at exit related to the deallocation of boost::shared_ptr
+  created by Python without acquiring the GIL.
+- Correct simulation display in OSG >= 3.2.
+- Fixed several bugs in cell picking.

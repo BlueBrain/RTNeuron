@@ -1,0 +1,51 @@
+#!/usr/bin/python
+
+## Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+##                           Blue Brain Project and
+##                          Universidad Politécnica de Madrid (UPM)
+##                          Juan Hernando <juan.hernando@epfl.ch>
+##
+## This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+##
+## This library is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License version 3.0 as published
+## by the Free Software Foundation.
+##
+## This library is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along
+## with this library; if not, write to the Free Software Foundation, Inc.,
+## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import sys
+import os
+
+python_suffix = '${PYTHON_LIBRARY_SUFFIX}/rtneuron'
+
+prefix = os.path.dirname(__file__)
+
+# Setting some paths based on the location of this file.
+
+if python_suffix in prefix:
+    prefix = prefix[0:-len(python_suffix)]
+
+    # If this module in imported from an install directory we need to set
+    # shader path to allow the relocation of the artifacts.
+    if not 'RTNEURON_SHADER_PATH' in os.environ:
+        os.environ['RTNEURON_SHADER_PATH'] = \
+            os.path.join(prefix, 'share/RTNeuron//shaders/GL2')
+    # osgTransparency doesn't use the version number to allow multiple versions
+    # under the same install prefix.
+    if not 'OSGTRANSPARENCY_SHADER_PATH' in os.environ:
+        os.environ['OSGTRANSPARENCY_SHADER_PATH'] = \
+            os.path.join(prefix, 'share/osgTransparency/shaders/GL2')
+else:
+    prefix = prefix[0:-len('rtneuron')]
+
+    # This path is needed to find Pression plugins when running a build-only
+    # version from a directory which is not the build one
+    if not 'PRESSION_PLUGIN_PATH' in os.environ:
+        os.environ['PRESSION_PLUGIN_PATH'] = prefix

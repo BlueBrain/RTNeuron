@@ -1,0 +1,689 @@
+## Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+##                           Blue Brain Project and
+##                          Universidad Politécnica de Madrid (UPM)
+##                          Juan Hernando <juan.hernando@epfl.ch>
+##
+## This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+##
+## This library is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License version 3.0 as published
+## by the Free Software Foundation.
+##
+## This library is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along
+## with this library; if not, write to the Free Software Foundation, Inc.,
+## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+from __future__ import print_function
+
+import numpy as _np
+import os.path
+import os as _os
+import sys as _sys
+import copy as _copy
+
+if _sys.version_info[0] != ${USE_PYTHON_VERSION}:
+    raise ImportError("Invalid Python version")
+
+from . import vizcluster # This must be imported before GL
+from . import shared_ptr_fix # This must be imported before _rtneuron or brain
+from . import path_setup # Must be imported before loading osgTransparency or
+                         # RTNeuron core
+from ._rtneuron import *
+
+from . import options as _options
+from .options import choose_camera_manipulator
+
+from . import util
+from . import sceneops
+
+import brain as _brain # Goes after ._rtneuron to ensure that the C++ library is
+                       # already loaded
+options = None
+global_attributes = None
+default_scene_attributes = None
+
+def parse_options(argv):
+    global options
+    global global_attributes
+    global default_scene_attributes
+    options = _options.command_line_options(argv)
+    global_attributes = _options.create_rtneuron_engine_attributes(options)
+    default_scene_attributes = _options.create_scene_attributes(options)
+
+# @todo Replace this with a default initialization
+parse_options([])
+
+class ProgressBar:
+    def step(self, msg, size, total):
+        from math import floor
+        if size == 0:
+            # Temporary progress report
+            print(msg)
+            print('0%   10   20   30   40   50   60   70   80   90   100%')
+            print('|----|----|----|----|----|----|----|----|----|----|')
+            self._current = 0
+        else:
+            current = floor(size/float(total) * 51)
+            if current > self._current:
+                _sys.stdout.write('*' * int(current - self._current))
+                _sys.stdout.flush()
+                self._current = current
+                if current == 51: print('')
+
+def _init_engine(argv=None):
+    import sys
+
+    global engine
+    try:
+        engine.exit()
+        del engine
+        global app
+        try:
+            app = None
+        except NameError:
+            pass
+    except NameError:
+        pass
+    argv = argv or sys.argv
+    engine = RTNeuron(argv, global_attributes)
+    return engine
+
+def _init_simulation(simulation_config=None, require_simulation=True):
+    """Create a brain.Simulation from a given blue config or try to find
+    an appropriate default one if none is given."""
+    global simulation
+
+    simulation_configs = []
+    if simulation_config:
+        simulation_configs.append(simulation_config)
+    else:
+        simulation_configs.append(_options.DEFAULT_BLUECONFIG)
+        if require_simulation:
+            try:
+                simulation_configs += _brain.test.blue_configs
+            except AttributeError:
+                pass
+        else:
+            # If simulation data is not required it's better to try the
+            # CircuitConfig tests data set because it contains synapses.
+            try:
+                simulation_configs.append(_brain.test.circuit_config)
+            except AttributeError:
+                pass
+    print(simulation_configs)
+
+    for config in simulation_configs:
+        print("Trying to load blue config: " + config + "... ", end="")
+        _sys.stdout.flush()
+        try:
+            simulation = _brain.Simulation(config)
+            print("done")
+            return simulation
+        except:
+            print("failed")
+    raise RuntimeError("No valid blue config found")
+
+def _scene_and_view(scene_or_view):
+    if type(scene_or_view) == View:
+        return scene_or_view.scene, scene_or_view
+    else:
+        return scene_or_view, None
+
+def apply_compartment_report(simulation, scene_or_view,
+                             report_name):
+    """Load compartment report and apply it to the given scene.
+
+    The second parameter can be a Scene or a View. If a View is given,
+    simulation display will be enabled on it.
+    """
+    scene, view = _scene_and_view(scene_or_view)
+    if not scene:
+        return
+
+    report = simulation.open_compartment_report(report_name)
+    scene.setSimulation(report)
+
+    if view:
+        view.attributes.display_simulation = True
+
+    return report
+
+def apply_spike_data(simulation_or_filename, scene_or_view):
+    """Load a spike file and apply it to the given scene.
+
+    The first parameter can be a Scene or a View. If a View is given,
+    simulation display will be enabled on it.
+    """
+    scene, view = _scene_and_view(scene_or_view)
+    if not scene:
+        return
+
+    if type(simulation_or_filename) == _brain.Simulation:
+        report = simulation_or_filename.open_spike_report()
+    else:
+        report = _brain.SpikeReportReader(simulation_or_filename)
+    scene.setSimulation(report)
+    if view:
+        view.attributes.display_simulation = True
+
+    return report
+
+def create_scene(engine, simulation, neuron_targets,
+                 report_name=None, spikes=None, scene_attributes=None):
+    """Create a scene object for an engine, add the given targets
+    and setup simulation.
+    """
+
+    # Creating scene
+    if not scene_attributes:
+        scene_attributes = default_scene_attributes
+
+    scene = engine.createScene(scene_attributes)
+    scene.circuit = simulation.open_circuit()
+
+    progress = ProgressBar()
+    scene.progress.connect(progress.step)
+
+    # Adding neuron targets
+    for target in neuron_targets:
+        if (hasattr(target[1], 'mode') and
+            target[1].mode == RepresentationMode.NO_DISPLAY):
+            continue
+        try:
+            scene.addNeurons(*target)
+        except RuntimeError as exc:
+            print("Error adding neurons:" + str(exc))
+
+    # Setting simulation data
+    display_simulation = False
+    if report_name != None:
+        try:
+            report = apply_compartment_report(simulation, scene, report_name)
+            display_simulation = True
+        except Exception as k:
+            print("Error while applying compartment report: " + str(k))
+    if spikes != None:
+        try:
+            reader = apply_spike_data(
+                simulation if spikes == True else spikes, scene)
+            display_simulation = True
+        except Exception as k:
+            print("Error while applying spike data: " + str(k))
+
+    return scene, display_simulation
+
+
+def display_empty_scene(scene_attributes=AttributeMap(), argv=None,
+                        opengl_share_context=None):
+    """Instantiate an RTNeuron engine with an empty scene.
+
+    Return the view object.
+    """
+    engine = _init_engine(argv=argv)
+    # The OpenGL share context must be set before calling init. We also set
+    # it even if it's None to replace a previous one when the engine object
+    # is reused (e.g. start_app() followed by display_circuit())
+    engine.setShareContext(opengl_share_context)
+    scene = engine.createScene(scene_attributes)
+    engine.init()
+    view = engine.views[0]
+    view.scene = scene
+    engine.resume()
+
+    return view
+
+def display_circuit(config=None,
+                    target=('Column', {'mode': RepresentationMode.SOMA}),
+                    report=None, spikes=None, eq_config='', argv=None,
+                    opengl_share_context=None):
+
+    """Opens a simulation configuration and displays the given targets.
+
+    If no config is provided this function will try to load the Kaust
+    circuit from a known location, otherwise it will try to load the test
+    data set.
+
+    The target specification can be rather complex so it deserves a detailed
+    explanation:
+
+    - A target can be a single target element or a list of targets elements.
+    - Each element can be a target key or a tuple of key and attributes.
+    - Target keys can be of one of these types:
+
+      - integer: Cell identifiers
+      - numpy arrays of dtype u4, u8 or i4
+      - string: Target labels. A target label can be in the form
+        regex[%number], where regex is a valid Python regular expression
+        and the optional suffix specifies a random subsampling of the target
+        to a given percentage, e.g. Layer_[23]%10 will result in a 10% of
+        targets Layer_2 and Layer_3.
+      - an iterable object: Each element being a cell identifier.
+
+    - The attributes for a target can be either AttributeMap objects or
+      dictionaries. Possible attributes are documented in Scene.addNeurons
+
+    The following are examples of target specifications:
+
+    - 'Column'
+    - ('MiniColumn_0', {'mode': RepresentationMode.SOMA})
+    - ['Layer1', 'Layer2']
+    - numpy.array([1, 2, 3, 4, 5], dtype="u4")
+    - [(123, {'color': [1, 0, 0, 1]}),
+       (range(1, 100), {'color': [0, 0.5, 1, 1]})]
+
+    A compartment report name can be provided.
+    The spikes parameter can take a file name to read a spike report from a
+    file or True to use the default spike report of the config.
+
+    The optional parameter share_context can be used to pass a QOpenGLContext
+    to be assigned to the engine before init is called. This is used
+    to integrate Qt overlays using the classes in the rtneuron.gui module.
+
+    This function affects two global variables of the rtneuron module:
+
+    - engine, the RTNeuron engine. If already existing, the current
+      configuration is exited before anything else, if not a new one
+      is created.
+    - simulation, the brain.Simulation opened.
+
+    Multi-node configurations are not supported by this method. Trying to
+    do so has undefined behaviour (most probably a deadlock).
+    """
+    import re
+
+    # Creating the global engine and simulation objects
+    simulation = _init_simulation(config)
+    engine = _init_engine(argv=argv)
+
+    translated_targets = []
+
+    def process_target(t):
+        if type(t) == tuple:
+            assert(len(t) == 2)
+            key = t[0]
+            assert(type(t[1] == AttributeMap) or type(t[1]) == dict)
+            attributes = AttributeMap(t[1]) if type(t[1]) == dict else t[1]
+        else:
+            key = t
+            attributes = AttributeMap()
+            # These are not strictly needed, but avoid a spurious warnings in
+            # debug mode
+            attributes.mode = RepresentationMode.WHOLE_NEURON
+            attributes.color_scheme = ColorScheme.SOLID
+        try:
+            t = util.key_to_gids(key, simulation)
+        except Exception as e:
+            print("Warning: " + e.msg)
+        else:
+            translated_targets.append((t, attributes))
+
+    if type(target) == list:
+        for t in target:
+            process_target(t)
+    else:
+        process_target(target)
+
+    # Creating the scene
+    scene, display_simulation = \
+        create_scene(engine, simulation, translated_targets,
+                     report_name=report, spikes=spikes)
+
+    # Initializing the rendering configuration
+
+    # The OpenGL share context must be set before calling init. We also set
+    # it even if it's None to replace a previous one when the engine object
+    # is reused (e.g. start_app() followed by display_circuit())
+    engine.setShareContext(opengl_share_context)
+    engine.init(eq_config)
+    engine.pause()
+
+    assert(len(engine.views) == 1)
+    view = engine.views[0]
+    view.scene = scene
+    view.attributes.display_simulation = display_simulation
+
+    # Waiting for the first 3 frames:
+    # - Schedule data loading in the new scene
+    # - Data loading and rendering
+    # - One extra because of latency in view propagation, but why?
+    for f in range(3):
+        engine.frame()
+        engine.waitFrame()
+
+    engine.resume()
+
+    return view
+
+def display_synapses(targets, afferent=True, attributes=None):
+    """Adds the afferent or efferent synapses of a given cell target to the
+    scene of the first view of the current application.
+
+    This function assumes that an application and simulation are already
+    setup. Synapses are added to the scene of the first view of the current
+    application.
+
+    The neurons of the given target (and efferent neurons in case of efferent
+    synapses or soma afferent synapses) and the morphologies needed to find
+    the locations of the synapses are also supposed to be already loaded.
+    If the neurons are missing an exception will be thrown.
+
+    Synapses for which the morphology needed to compute the location is
+    missing are skipped (an warning message will be printed in this case).
+
+    The target can be:
+
+    - integer: Cell identifiers
+    - an iterable of integers
+    - a numpy array of u4, u8 or i4
+    - string: A target label
+
+    The optional attributes parameter takes an AttributeMap as input.
+    """
+    global engine
+    assert(engine)
+    view = engine.views[0]
+    scene = view.scene
+
+    gids = util.targets_to_gids(targets, simulation)
+
+    if attributes == None:
+        attributes = AttributeMap()
+    if afferent:
+        synapses = scene.circuit.afferent_synapses(gids)
+        scene.addAfferentSynapses(synapses, attributes)
+    else:
+        synapses = scene.circuit.efferent_synapses(gids)
+        scene.addEfferentSynapses(synapses, attributes)
+
+def display_shared_synapses(presynaptic, postsynaptic, afferent=True,
+                            attributes=None):
+    """Adds the afferent or efferent location of the synapses at which a
+    presynaptic target innervates a postsynaptic one.
+
+    This function assumes that an engine and simulation are already
+    setup. Synapses are added to the scene of the first view of the current
+    enginen.
+
+    The neurons of both targets are supposed to be loaded as well as the
+    morphologies of the presynaptic neurons for efferent locations and
+    the morphologies of the postsynaptic neurons for afferent locations.
+    For synapses that project into the soma, the presynaptic morphologies are
+    also needed to find the afferent positions.
+
+    If the neurons are missing an exception will be thrown.
+
+    If a morphology is not available to compute the location of a synapse
+    the synapse will be skipped and a warning message printed.
+
+    The pre and postsynaptic targets can be:
+
+    - integer: Cell identifiers
+    - an iterable of integers
+    - a numpy array of u4, u8 or i4
+    - string: A target labels
+
+    The optional attributes parameter takes an AttributeMap as input.
+    """
+    global engine
+    assert(engine)
+    view = engine.views[0]
+    scene = view.scene
+
+    presynaptic_gids = util.targets_to_gids(presynaptic, simulation)
+    postsynaptic_gids = util.targets_to_gids(postsynaptic, simulation)
+
+    synapses = scene.circuit.projected_synapses(presynaptic_gids,
+                                                postsynaptic_gids)
+
+    if attributes == None:
+        attributes = AttributeMap()
+    if afferent:
+        scene.addAfferentSynapses(synapses, attributes)
+    else:
+        scene.addEfferentSynapses(synapses, attributes)
+
+def display_morphology_file(file_name, use_tubelets=True, soma=True, argv=None):
+    """Display a morphology given its HDF5 file.
+
+    Parameters:
+    - file_name (str): The path to the swc or h5 morphology path
+    - use_tubelets (bool): If true, render branches using tubelets, otherwise
+      use pseudo-cylinders.
+    - show_soma (bool): Add to the model an approximation of the soma as a
+      sphere.
+
+    Temporary files with the circuit paths and description are created to
+    be able to load the morphology and create a scene to be displayed.
+    The morphology is shown using only tubelets, so no mesh is required.
+    View frustum culling is disabled.
+    """
+    import tempfile
+    import os.path
+
+    # Extracting file name components
+    morph_path = os.path.dirname(file_name)
+    if morph_path == '':
+        morph_path = os.getcwd()
+    morph_name = os.path.splitext(os.path.basename(file_name))
+    assert(morph_name[1] == '.h5' or morph_name[1] == '.swc')
+    morph_name = morph_name[0]
+
+    # Creating the temporary context, to be replaced by
+    # tempfile.TemporaryDirectory if Python 3.2 is adopted
+    class TempDir(object):
+        def __enter__(self):
+            self.name = tempfile.mkdtemp(prefix='tmpCircuit')
+            return self.name
+
+        def __exit__(self, type, value, traceback):
+            import shutil
+            shutil.rmtree(self.name)
+
+    with TempDir() as tmp_dir:
+        # Creating the circuit file
+        circuit_name = tmp_dir + "/circuit.mvd2"
+        circuit = open(circuit_name, 'w')
+        circuit.write('Neurons Loaded\n'
+                      '%s 0 0 0 0 0 0 0 0 0 0 dummy\n'
+                      'MorphTypes\n'
+                      'Glia INT INH\n'
+                      'ElectroTypes\n'
+                      'none\n' % morph_name)
+        circuit.close()
+
+        # Creating blue config file
+        config_name = tmp_dir + "/config"
+        config = open(config_name, 'w')
+        config.write('Run CircuitConfig\n'
+                     '{\n'
+                     '    MorphologyPath %s\n'
+                     '    CircuitPath %s\n'
+                     '}\n' % (morph_path, circuit_name))
+        config.close()
+
+        # Creating the application and simulation objects
+        engine = _init_engine(argv)
+
+        # Creating the scene
+        scene_attributes = AttributeMap()
+        scene_attributes.circuit = config_name
+        scene_attributes.use_meshes = False
+        scene_attributes.use_cuda = False
+        scene_attributes.use_octree = False
+        scene_attributes.lod = AttributeMap()
+        scene_attributes.lod.neurons = AttributeMap()
+        if use_tubelets:
+            scene_attributes.lod.neurons.tubelets = [0, 1]
+        else:
+            scene_attributes.lod.neurons.high_detail_cylinders = [0, 1]
+        if soma:
+            scene_attributes.lod.neurons.spherical_soma = [0, 1]
+        scene_attributes.connect_first_order_branches = False
+
+        scene = engine.createScene(scene_attributes)
+        scene.addNeurons([1])
+
+        engine.init()
+        engine.pause()
+        view = engine.views[0]
+        view.scene = scene
+        for f in range(3):
+            engine.frame()
+            engine.waitFrame()
+        engine.resume()
+    return view
+
+def add_hexagonal_prism(scene, center, height, radius,
+                        color=[0.2, 0.4, 1.0, 0.2], line_width=2.5):
+    """Add an hexagonal prism to a scene.
+
+    The prism is added as two objects, one for the faces and another one
+    with an outline. The outline is rendered with black lines using GL_LINES.
+    The line width can be chosen, but it must be >= 1.
+    """
+
+    if line_width < 1:
+        raise ValueError("Line width must be greater or equal to one")
+
+    import math
+    apotheme = math.sqrt(3) / 2 * radius
+    c = center
+    vertices = [[c[0] - radius,       c[1]         , c[2]],
+                [c[0] - radius / 2.0, c[1]         , c[2] - apotheme],
+                [c[0] + radius / 2.0, c[1]         , c[2] - apotheme],
+                [c[0] + radius,       c[1]         , c[2]],
+                [c[0] + radius / 2.0, c[1]         , c[2] + apotheme],
+                [c[0] - radius / 2.0, c[1]         , c[2] + apotheme],
+                [c[0] - radius,       c[1] + height, c[2]],
+                [c[0] - radius / 2.0, c[1] + height, c[2] - apotheme],
+                [c[0] + radius / 2.0, c[1] + height, c[2] - apotheme],
+                [c[0] + radius,       c[1] + height, c[2]],
+                [c[0] + radius / 2.0, c[1] + height, c[2] + apotheme],
+                [c[0] - radius / 2.0, c[1] + height, c[2] + apotheme]]
+    indices = [[0, 5, 1], [1, 5, 4], [1, 4, 2], [2, 4, 3],
+               [6, 7, 11], [7, 10, 11], [10, 7, 8], [8, 9, 10]]
+    for i in range(5):
+        indices += [[i, 6 + i, 1 + i], [7 + i, i + 6, 1 + i]]
+    indices += [[0, 6, 5], [5, 6, 11]]
+
+    scene.addGeometry(vertices, indices, colors=color,
+                      attributes = AttributeMap({'flat': True,
+                                                 'polygon_offset': [1, 1]}))
+
+    indices = [[0, 6], [1, 7], [2, 8], [3, 9], [4, 10], [5, 11],
+               [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0],
+               [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 6]]
+    scene.addGeometry(vertices, indices, colors = [0.0, 0.0, 0.0, 1.0],
+                      attributes = AttributeMap({'line_width': line_width}))
+
+def start_shell(local_ns=None, module=None):
+    """Start an IPython shell.
+
+    The namespace of the IPython shell is the namespace of the rtneuron
+    module unless another one is provided.
+    A regular Python console is started if IPython is not available.
+    """
+    try:
+        if not local_ns:
+            local_ns = globals()
+
+        import IPython
+        import sys
+
+        def checkIPythonVersion(major, minor, comparison='=='):
+            version = list(map(int, (IPython.__version__.split('.')[0:2])))
+            v = [major, minor]
+            if comparison == '==':
+                return version == v
+            elif comparison == '>':
+                return version > v
+            elif comparison == '<':
+                return version < v
+            elif comparison == '>=':
+                return version >= v
+            elif comparison == '<=':
+                return version <= v
+            else:
+                raise RuntimeError("Unknown version comparison")
+
+        if checkIPythonVersion(3, 0, '>='):
+            argv = ["--no-banner"]
+            # Adding Qt5 interoperability only if there's a Qt application
+            # running
+            try:
+                from PyQt5.QtCore import QCoreApplication
+                if QCoreApplication.instance() is not None:
+                    argv.append("--gui=qt5")
+            except ImportError:
+                pass
+            print("RTNeuron interactive IPython shell")
+            IPython.start_ipython(argv=argv, user_ns=local_ns)
+        elif checkIPythonVersion(2, 4, '>='):
+            print("RTNeuron interactive IPython shell")
+            IPython.start_ipython(argv=["--no-banner"], user_ns=local_ns)
+        else:
+            # Unsupported IPython API
+            raise RuntimeError()
+    except Exception as e:
+        print(e)
+        print("IPython could not be started, using basic console instead")
+        import code
+        console = code.InteractiveConsole()
+        console.interact()
+
+def start_app(name=_options.DEFAULT_APP, *args, **kwargs):
+    """Startup the app with the given name
+
+    Apps are searched as modules under rtneuron.apps. List and keyword
+    arguments are forwarded to the app initialization function.
+    """
+
+    if name == "circuit_slicing":
+        print("Warning: circuit_slicing has been renamed to circuit_viewer")
+        return
+    if name == "browse_connections":
+        print("Warning: browse_connections has been renamed to"
+              "connection_viewer")
+        return
+
+    try:
+        __import__('apps.' + name, globals(), locals(), [], 1)
+    except ImportError as e:
+        print("Error: App module not found: " + e.args[0])
+        return
+    app_module = getattr(apps, name)
+    global app
+    app = app_module.start(*args, **kwargs)
+
+def snapshot_to_notebook(view):
+    """Takes a snaphost of the given view and adds the image to the active
+    IPython notebook.
+    """
+    import tempfile
+    tmp = tempfile.NamedTemporaryFile(delete = False, suffix = '.png')
+    filename = tmp.name
+    tmp.close()
+    view.snapshot(filename)
+    from IPython.display import Image
+    image = Image(filename=filename)
+    _os.remove(filename)
+    return image
+
+# Cleaning up code to ensure that the internal threads from rtneuron.engine
+# are stopped orderly during module unload.
+# Without the atexit callback, the rendering engine thread may be stopped too
+# late making it crash when attempting to acquire the GIL. This happens if
+# Python code needs to be invoked after Py_Finalize has destroyed the GIL.
+def _cleanup():
+    global engine
+    try:
+        del engine
+    except NameError:
+        pass
+import atexit
+atexit.register(_cleanup)

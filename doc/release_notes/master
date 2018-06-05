@@ -1,0 +1,51 @@
+# Introduction
+
+This is major release that introduces a new API resulting from the transition
+from BBPSDK to Brion/Brain as the data access layer.
+
+No new features are provided by this release.
+
+# New in this release
+
+## API Changes
+
+- All deprecated functions, variables and types have been removed.
+- The addNeurons, addAfferentSynapses and addEfferentSynapses methods have
+  been changed to take GIDSets (lists or numpy arrays of ints in the Python
+  side) and brain::Synapses as input.
+- The objects returned by Scene::Object::getObject have been changed according
+  to the new inputs taken by the *add* methods.
+- All Scene methods taking bpp::Cell_Target now take brion::GIDSet. These
+  methods accept iterables or numpy arrays in the Python side.
+- All Scene methods taking Synapse or Synapses objects now take brain::Synapse
+  and brain::Synapses.
+- Public enums changed to be C++11 enum classes. The bbp::rtneuron::types
+  namespace has been removed.
+- The scene attribute conservative_loading has been removed.
+- Added the scene attribute 'circuit', string with the URI of the circuit to
+  display. This attribute is only taken be the  constructor.
+- Added the methods Scene::getCircuit and Scene::setCircuit.
+- Added the scene attribute mesh_path. This attribute allows the user to
+  set the path to a directory containing neuron meshes. Intended for future
+  use with SONATA circuits.
+- Added two new methods to NeuronClipping, unclipEfferentBranches and
+  unlcipAfferentBranches. This methods take into C++ some compute intensive
+  code that was called from rtneuron.sceneops.SynapticProjections.
+- Scene::ModelSelected signal removed as it was not triggered from anywhere.
+- rtneuron Python module variables 'experiment' and 'app' renamed to
+  'simulation' and 'engine'.
+
+Changes in the Python API
+
+## CLI Changes
+
+- The python application rtneuron-app.py has been renamed to rtneuron.
+- The option --demo has been renamed to --app.
+- Two power apps have been renamed: browse_connections to connection_viewer
+  and circuit_slicing to circuit_viewer.
+
+## Deprecation
+
+- Two applications have been renamed: circuit_slicing is now circuit_viewer
+  and browse_connections is connection_viewer.
+

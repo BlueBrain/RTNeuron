@@ -1,0 +1,19 @@
+# Introduction
+
+The main change in this release is that the Qt GUI has been ported to Qt 5.
+This brings many new possibilities in terms of QML widgets that can be used
+in the interface.
+
+# New in this release
+
+## Enhancements
+
+- Porting to Qt 5. As a side effect the PyQt code has been simplified
+  substantially.
+- Now it is possible to change the attenuation factor used in alpha-by-width
+  coloring scheme after the targets have been added to the scene.
+
+## CLI Changes
+
+- Extended the --alpha-by-width option to admit an optional attenuation factor.
+  The syntax is alpha-by-witdh\@attn where attn is a floating point number.

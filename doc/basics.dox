@@ -1,0 +1,1447 @@
+/* Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+ *                           Blue Brain Project and
+ *                          Universidad Politécnica de Madrid (UPM)
+ *                          Juan Hernando <juan.hernando@epfl.ch>
+ *
+ * This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+namespace bbp
+{
+namespace rtneuron
+{
+/*
+Note template
+
+\htmlonly<span id="note"><a><sup>note</sup><span><span>(</span>
+The text
+<span>)</span></span></a></span>
+\endhtmlonly
+
+*/
+
+/**
+
+\htmlonly
+
+<style type="text/css" media="screen, projection">
+pre {
+    padding: 0.5em;
+    border: 1px dashed #2f6fab;
+    color: black;
+    background-color: #f9f9f9;
+    line-height: 1em;
+}
+
+#note {
+    position: relative;
+}
+#note span {
+    display: none;
+}
+#note a span {
+    display: none;
+    color: #FFFFFF;
+}
+#note a span span {
+    display: none;
+}
+#note a:hover span span {
+    display: none;
+}
+#note a:hover span {
+    display: block;
+    position: absolute;
+    width: 20em;
+    background-color: #aaa;
+    left: -21em;
+    top: -5px;
+    color: #FFFFFF;
+    padding: 5px;
+}
+#note a:hover #right {
+    display: block;
+    position: absolute;
+    width: 20em;
+    background-color: #aaa;
+    left: 2em;
+    top: -5px;
+    color: #FFFFFF;
+    padding: 5px;
+}
+</style>
+\endhtmlonly
+
+\page basics Basic usage
+
+\section starting_rtneuron Starting RTNeuron
+
+%RTNeuron can be used as a command line application with an embedded Python
+interpreter or by importing the Python module \c rtneuron in your own scripts.
+
+In the first case the executable is called \c rtneuron, which is
+a Python script itself. When this script is run without arguments it will start
+the interpreter (IPython if available) with a preloaded environment that
+includes all %RTNeuron classes and several helper functions.
+
+\verbatim
+$ rtneuron
+No blue config file or model list specified. Launching shell
+RTNeuron interactive Python shell
+In [1]:
+\endverbatim
+
+When \c rtneuron is run with arguments that specify a circuit and
+several targets no shell is started by default. To start it, include
+\c \-\-shell in the command line. For example:
+
+\verbatim
+$ rtneuron -b ~/Buildyard/Release/install/include/BBP/BlueConfig --target MiniColumn_0 --shell
+Processing 100 neurons to be added
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+Adding 100 to the scene
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+RTNeuron interactive Python shell
+In [1]:
+\endverbatim
+
+The following sections will cover the basic command line options and Python
+API to load circuits, display simulation, camera control and record movies.
+
+### Interactive help
+
+All the reference documentation is available inside the Python console using
+the \c help function. You can inspect the reference of %RTNeuron classes as
+well as free functions and methods, e.g:
+\verbatim
+$ help(RTNeuron)
+$ help(Scene.addNeurons)
+$ help(display_circuit)
+\endverbatim
+
+\section basic_concepts Basic Concepts
+
+There are a few basic concepts that are used inside this guide which refer
+to the main objects handled by an instance of %RTNeuron. There is no need
+to understand what these objects are if you plan to use %RTNeuron only from
+the command line, but if you ever intend to use the Python shell it is worth
+getting some basic understanding.
+
+- The **application**: This is the main object that holds everything together
+  and handles the Equalizer configuration. The lifetime of views, scenes and
+  the simulation player is subject to the lifetime of the application.
+- \b %Camera: A camera defines the parameters of the 3D to 2D projection
+  (orthographic or perspective) and the position and orientation of the
+  projection plane (both projections) and projection point (only perspective).
+- \b %Scene: A scene handles the geometric representation of all the objects to
+  be displayed (neurons, synapses and additional polygonal meshes) as well
+  as the simulation data to be mapped on the neurons. This implies that
+  it is not possible to reuse a scene to display two different simulations
+  at the same time.
+  Currently, most shading style properties are scene properties, in particular:
+  - Whether alpha blending is enabled and the algorithm to use together with
+    its parameters.
+  - Pseudo electron microscopy shading.
+  .
+  Objects can be added and removed from a scene, but please note that these
+  operations can be expensive
+  \warning In parallel rendering configurations the changes in scenes
+  are currently not propagated from the application node (the node running
+  the interpreter) to the clients.
+
+  Some of the scene responsibilities will be moved to views in the future.
+- \b %Scene **object handler**: For each object added to the scene, a handler
+  to it is created. An object handler provides the functionality to modify
+  properties like the display mode and color of the object. Changes to scene
+  handlers are applied by modifying an \pybind{AttributeMap} they contain
+  and then calling an update method.
+- The **simulation player**: This objects exposes the methods to change the
+  simulation frame being displayed, start and stop simulation playback and
+  control playback speed.
+- \b %View: A view connects a scene and a camera together. Views handle
+  snapshot capturing and hold some properties that affect the rendering and
+  visual representation of the scene, the most important being:
+  - The simulation color maps (for compartment and spike data).
+  - Parameters for stereoscopic rendering.
+  - Idle mode anti-aliasing.
+  - The level of detail bias.
+  .
+  There is a one to one mapping between %RTNeuron views and Equalizer views.
+  That means that if the application is started with an Equalizer
+  configuration file, a %View will be created for each view present in the
+  configuration file.
+
+\subsection predefined_objects Basic objects in the Python shell
+
+The objects described above map to objects actually exposed by the Python/C++
+library. When %RTNeuron is started with something to display and the
+\c \-\-shell option, the interpreter contains these predefined variables:
+- **app** (\pybind{RTNeuron}): The %RTNeuron application object. The
+simulation player API (\pybind{SimulationPlayer}) is accessible through
+an attribute called **player**.
+- **simulation** (brain.Simulation): This is the brain.Simulation representing
+the simulation config.
+- **scene** (\pybind{Scene}): The scene with the targets
+and models being displayed. The list **scene.objects** is a read only attribute
+that contains the handlers for the objects in the scene (\pybind{Scene.Object}).
+Each handler has at least two attributes and two methods:
+  - **attributes**: An \pybind{AttributeMap} to modify object properties
+  - **object**: A copy of the object used to create the scene object (its type
+  depends on the type of scene object). Modifying it will not affect the scene.
+  - **update()**: The method to make effective the modifications on attributes
+  - **query(ids)**: This method allows the selection of a subset of the
+  entities contained in a handler by means of a list of identifiers,
+  and returns a handler to the subset (only implemented for neuron object
+  handlers at the moment).
+- **view** (\pybind{View}): The first view of the
+Equalizer configuration loaded (and the only one if the default one is used).
+The camera is accessed by **view.camera** (\pybind{Camera}).
+
+More classes are available and will be introduced in the following
+sections. You can always refer to the <a href="annotated.html"> C++</a> or
+<a href="python/python_doc.html"> Python</a> library reference manuals
+for a more technical description.
+
+\section command_line_scenes Displaying objects using the command line
+
+Currently, the only objects that can be displayed with \c rtneuron from
+the command line are neuron targets. To do so, the first thing that needs to
+be given is the BlueConfig file for that circuit. This is done by passing the
+path to the file with the \c -b command line option at start-up.
+
+To specify the neuron targets to display there are three command line options
+- \c \-\-target \em target_name [\em options]
+- \c \-\-neurons \em first_gid \em last_gid [\em options]
+- \c -n \em gid [\em options]
+
+The first option loads a neuron set by its target name as present in the
+\c user.target or \c start.target files pointed by the BlueConfig. Regular
+expressiona are also accepted, as well as the special suffix \c %%number to
+request a subsampling of the target to the given percentage (e.g. Column%5).
+The second option loads a list of neurons by GID starting at the first GID and
+finishing at the second one, both included. The last option allows to load a
+single neuron given its GID. The optional parameters for each option are
+explained \ref neuron_target_options "below".
+
+These options can be combined in any order any number of times. Note however,
+that when a target is added to the scene %RTNeuron will refuse to add the
+target and will print an error if some of its neurons have already been added
+to the scene.
+
+After loading, the camera will be automatically placed along the z axis in a
+position where all the cell somas are encompassed in vertical
+\htmlonly<span id="note"><a><sup>note</sup><span id="right"><span>(</span>
+This is true as long as no other parameters affecting the camera are included.
+<span>)</span></span></a></span>\endhtmlonly.
+
+If no additional options to create a specific Equalizer configuration are
+provided, %RTNeuron will start a default configuration when started this way.
+The image below shows the default window with a soma column of 10K neurons
+loaded from the command line:
+
+\image html startup_with_a_soma_column.png Default RTNeuron window launched with: rtneuron -b BlueConfig --target Column soma.
+
+\section interpreter_scenes Displaying objects using the Python shell
+
+Inside the python shell the objects that can be added to scenes are:
+- Neuron targets
+- Synapse targets
+- Polygonal meshes, which can be either:
+  - Polygonal models loaded from file.
+  - Arbitrary meshes created programmatically.
+
+In general, objects can be added to the scene using helper functions
+provided by the \c rtneuron module or using the Python API manually.
+
+\warning Limitations apply to multi-node Equalizer configurations. At the moment
+scene creation and propagation of changes are not redistributed to clients.
+Only a few things are redistributed and that is the reason for which scenes
+must be created before the configuration is started.
+This may change in the future, but the reason for this restriction is
+that scenes must be known before a distributed configuration is started so
+it is possible to redistribute the changes that are supported at the moment.
+
+\subsection helper_functions_scenes Helper Python functions to populate scenes
+
+### Displaying neuron targets
+
+The function that eases the loading and displaying of neuron targets is
+\pyfunc{display_circuit}. It can used inside the Python shell either started
+with \c rtneuron without arguments or using the \c \-\-shell option.
+
+- \pyfuncargs{display_circuit,blue_config\, target=('Column'\, {'mode': rtneuron.RepresentationMode.SOMA})\, report=None\, spikes=None\, eq_config=''\, argv=None}
+
+Only the first 2 arguments will be explained here, the rest will be explained
+in the following sections. The first argument is a path to a simulation config
+file that will be opened by a brain.Simulation. The second argument is a
+specification of neuron targets to load and display.  This argument can be
+a *target* or a list of targets. A *target* can be either a *target key* or a
+tuple (*target key*, *target attributes*). *Target keys* can be of one of
+these types:
+- \c int: a cell GID
+- \c numpy arrays of dtype u4, u8 or i4
+- \c str: A target name or regular expression for targets from the
+  \c start.target or \c user.target files with an optional suffix in the
+  format \c %%number to reduce the target to the given percentage.
+.
+The *target attributes* can be a Python dict of (name, value) pairs or
+an \pybind{AttributeMap}. Possible attributes are documented in
+\pybind{Scene.addNeurons} and in the next section.
+
+This function affects global variables of the \c rtneuron module (the
+variables from the interpreter that reference the same objects are also
+updated):
+- **app**: the \pybind{RTNeuron} object. If already existing, the current
+  configuration is exited before anything else. If needed a new application
+  is created.
+- **simulation**: the brain.Simulation, replaced with a new one using the blue
+  config file given.
+- **scene**: Replaced with the new one.
+- **view**: Replaced with first view of the new configuration.
+
+### Displaying synapse targets
+
+Synapses are displayed as spherical glyphs located at the presynaptic
+(*efferent*) or postsynaptic (*afferent*) site of the synapse.
+
+There are two functions to add synapses to the scene:
+- \pyfuncargs{display_synapses,target\, afferent=True\, attributes=None}
+- \pyfuncargs{display_shared_synapses,presynaptic\, postsynaptic\, afferent=True\, attributes=None}
+
+Both functions assume that an %RTNeuron instance with a valid configuration and
+scene is already running and will add the synapses to the **scene** attached
+to the first **view**. These preconditions are guaranteed if a circuit is
+loaded from the command line or using \pyfunc{display_circuit}.
+
+\note If you only want to display synapses, the easiest way to accomplish this
+is either remove the neurons from the scene with \pybind{Scene.remove}
+or hide them changing their display mode to RepresentationMode.NO_DISPLAY.
+Details on how to do the latter are given in \ref object_attributes. This
+process will be improved and simplified in the future.
+
+\note Load balancing mechanisms for sort-last parallel configurations
+are not implemented for synapse glyphs.
+
+The neurons and morphologies required to compute the synapse locations must
+have also been loaded. If a neuron is not available, an exception will be
+thrown. If a required morphology is not available, the synapse for which the
+location cannot be computed will be skipped and a warning message will be
+printed.
+
+These functions load the required synapses automatically into the
+microcircuit.
+\warning All bbp.Synapses containers already existing before calling either
+function will be invalidated (despite its inconvenience, this is by design
+of the BBPSDK).
+
+The *afferent* parameter can be used to choose between showing the
+postsynaptic (true) or the presynaptic positions (false) of the synapses. The
+attribute map can be used to change the positioning and the color and radius
+initially assigned to the synapses (more details \ref synapse_attributes "here").
+
+<table class="collapsed_table">
+<tr>
+<td>\image html afferent_synapses.png Afferent synapses of a single neuron. Added with display_synapses(*neuron*).</td>
+<td>\image html shared_synapses.png Pre and postsynaptic positions of 3 synapses shared between 2 neurons. Added with display_shared_synapses(*pre*, *post*, afferent = True|False, attributes = AttributeMap({'color': *color*)))
+</td>
+</tr>
+</table>
+
+### Displaying additional models
+
+Adding models from files to a scene is straight forward, for that
+reason there are not helper functions to do it.
+
+For arbitrary meshes created by the user there is no general helper
+function, but there exists a function to add hexagonal prisms to the scene.
+
+- \pyfuncargs{add_hexagonal_prism,scene\, center\, height\, radius\, color=[0.2\, 0.4\, 1.0\, 0.2]\, line_width=2.5}
+
+  This function adds two objects to the *scene* passed as first argument. The
+  first one is a hexagonal prism where the center of the bottom hexagon is placed
+  at *center*, the length of the hexagon sides is *radius*, the height
+  is *height* and the color is *color*. The second model is the same prism
+  but rendered as a black wireframe on top of the first one using *line_width*
+  as line width. The 3D vector for the center must be an indexable object
+  of length 3.
+
+The image below shows 6 of these prisms rendered with alpha-blending enabled
+(\c \-\-alpha\-blending command line option).
+
+\image html hexagonal_prisms.png
+
+\subsection manual_scenes Creating, populating and modifying scenes manually
+
+Scenes can only be created using the method \pybind{RTNeuron.createScene} and
+before the Equalizer configuration is started by the application object. The
+method createScene can take an optional AttributeMap to override the default
+scene parameters. Some of these options are explained in the \ref advanced as
+well at the reference manual.
+
+Once a scene is created objects can be added or removed at any moment. Note
+however, that it is better to modify a scene when it is not attached to any
+view because scene modifications trigger potentially costly operations.
+Automatic scenes updates can be enabled and disable with the scene attribute
+called \c **auto_update** and triggered manually with \pybind{Scene::update}.
+However, note that scenes are also updated when a frame is triggered by any
+other reason (e.g. camera manipulation with the mouse).
+
+The functions used to add/remove objects to a scene can be applied
+to scenes that have been created either from the command line or using
+\c **display_circuit**. Each object type is added using a different function,
+but all can be removed passing the proper object handler to the Scene.remove.
+Functions to add objects to the scene always return a handler to the object
+added. All the objects contained inside a scene can be accessed using the
+property \pybind{Scene.objects}.
+
+### Adding neuron targets
+
+To add a neuron target the method to use is \pybind{Scene.addNeurons} which
+takes a bbp.Neurons neurons container and an optional attribute map to
+configure the representation (see the reference for details) and returns
+an \pybind{Scene.Object,object handler} which can be used to modify the target
+afterwards.
+
+The **object** property of the handler returns the bbp.Neurons container with
+the neurons added to the scene.
+
+### Adding synapse targets
+
+To add synapse glyphs to the scene the methods to use are
+\pybind{Scene.addAfferentSynapses} and \pybind{Scene.addEfferentSynapses}
+Each one takes a bbp.Synapses container and adds spherical glyphs at the
+locations of the synapses, returning the object handler to modify and remove
+the synapses. The first function uses the presynaptic locations reported by
+the circuit file and the second one uses the postsynaptic locations. The
+afferent locations of soma synapses is computed projecting the efferent
+position on the approximate soma sphere orthogonally.
+
+The **object** property of the handler returns the bbp.Synapses container
+with the synapses added to the scene.
+
+\warning As already mentioned, note that this container may have been
+invalidated by having called the load function from Microcircuit.
+BBPSDK does not provide any mechanism to protect against faulty memory
+accesses if an invalid container is used.
+
+### Adding other polygonal models
+
+There are two functions to add polygonal models to the scene, one that loads
+the model from a file and another in which the model is provided by the user
+as a mesh with optional colors and normals.
+
+To load models from files use \pybind{Scene.addModel}. There are two
+overloads for this function and both take a file name, a transformation and an
+attribute map. The difference lies in the transformation parameter. In one
+overload it is a bbp.Matrix4f and in the other it is a string that specifies a
+colon separated concatenation of transformations. The transformations are
+written as:
+- "r@x,y,z,angle" for rotations, angle in degrees.
+- "s@x,y,z" for scalings.
+- "t@x,y,z" for translations.
+.
+An example is "r@1,0,0,90:t@1000,0,0". The supported file formats are
+those loadable by OpenSceneGraph plugins.
+
+Arbitrary meshes are added with \pybind{Scene.addMesh}. This function can add
+to the scene triangle and line soups. The first parameter is a n&times;3 array
+with the vertices, the input type can be an iterable of iterables or a numpy
+array. The second is the primitive to draw, it can be either a list of
+triangles or line indices. In the first case the functions expects a n&times;3
+array or similar, and a n&times;2 array in the second. The forth parameter is
+optional and it is a n&times;3 array with the per vertex normals. The fifth is
+a n&times;4 array with per vertex colors. The last parameter, also optional,
+is an attribute map with options for shading and choosing the primitive
+type. The valid attributes are explained in \pybind{Scene.addMesh}.
+
+\section object_attributes Scene object attributes
+
+\subsection neuron_target_options Neuron targets attributes
+
+There are two properties of a neuron target that can be configured from the
+command line or the Python API functions to add neurons to the scene: the
+display mode and the coloring mode. Using Python API there is access to
+more properties and actions. For example, it is also possible to cull away
+sections based on their branch order and modify the color maps using for
+simulation mapping (\ref per_object_colormaps).
+
+\htmlonly
+<table id="neuron_target_prop">
+<tr>
+<th colspan="4">Display modes: How neurons morphologies are displayed</th>
+</tr>
+
+<tr>
+<th>Name</th><th>Description</th>
+<th>Python value</th><th>CLI
+<span id="note"><a><sup>note</sup><span><span>(</span>
+Command line interface name<span>)</span></span></a></span></th>
+</tr>
+
+<tr>
+<td class="name">Soma</td>
+<td class="description">
+  Only the soma of the neurons will be shown using a sphere.
+  Neuron morphologies will be checked to obtain the radius of each neuron
+  unless <code>--no-morphologies</code> is used.</td>
+<td class="python_value">RepresentationMode.SOMA</td>
+<td class="cli_token">soma</td>
+</tr>
+
+<tr>
+<td class="name" style="padding-top: 15px">Detailed mode</td>
+<td class="description">
+  Load and display the neurons normally
+  <span id="note"><a><sup>note</sup><span><span>(</span>
+  What normally means depens on other options, but in general this means using
+  all levels of detail available, including the highly detailed meshes.
+  <span>)</span></span></a></span>. Apart from the circuit data and
+  the morphologies, meshes will also be loaded for the neuron target in this
+  case.</td>
+<td class="python_value" style="padding-top: 15px">
+RepresentationMode.WHOLE_NEURON</td>
+<td class="cli_token" style="padding-top: 15px">detailed</td>
+</tr>
+
+<tr>
+<td class="name" style="padding-top: 15px">Detailed without axon</td>
+<td class="description">
+  A variation of the detailed mode in which the axon is removed from the model
+  <span id="note"><a><sup>note</sup><span><span>(</span>
+  Unless unique morphologies can be assumed the axon is not actually removed,
+  but culled during rendering.
+  <span>)</span></span></a></span>.
+ </td>
+<td class="python_value" style="padding-top: 15px">
+RepresentationMode.NO_AXON</td>
+<td class="cli_token" style="padding-top: 15px">no_axon</td>
+</tr>
+
+<tr>
+<td class="name">Skeleton</td>
+<td class="description">
+  Display neurons using a graphical representation based solely on the
+  morphological points and radii.
+  <dl class="section note"><dt>Note</dt><dd>
+  This mode is intended for mesh generation debugging. It is not recommended
+  to use it for more that a handful of neurons because of its memory
+  consumption and performance. If you need to display a circuit for which
+  meshes do not exist use the command line option --no-meshes instead.
+  </dd></dl>
+</td>
+<td class="python_value">RepresentationMode.SEGMENT_SKELETON</td>
+<td class="cli_token">skeleton</td>
+</tr>
+
+<tr>
+<td class="name">No display</td>
+<td class="description">
+  The neurons will not be displayed but their information will still be
+  loaded.</td>
+<td class="python_value">RepresentationMode.NO_DISPLAY</td>
+<td class="cli_token">none</td>
+</tr>
+</table>
+<p />
+\endhtmlonly
+
+<table id="neuron_target_prop_illustration">
+<tr>
+<td>\image html cell_soma.png</td>
+<td>\image html cell_detailed.png</td>
+<td>\image html cell_no_axon.png</td>
+<td>\image html cell_skeleton.png</td>
+<tr><td>Soma</td><td>Detailed</td><td>No axon</td><td>Skeleton only</td></tr>
+</tr>
+</table>
+
+\htmlonly
+<p />
+<table id="neuron_target_prop">
+<tr>
+<th colspan="4">Coloring schemes: How neurons are colored</th>
+</tr>
+
+<tr>
+<th>Name</th><th>Description</th>
+<th>Python value</th><th style="width: 24em;">CLI
+<span id="note"><a><sup>note</sup><span><span>(</span>
+Command line interface name<span>)</span></span></a></span></th>
+</tr>
+
+<tr>
+<td class="name">Solid</td>
+<td class="description">Use a single user given color.</td>
+<td class="python_value">ColorScheme.SOLID</td>
+<td class="cli_token">R G B [A]</td>
+</tr>
+
+<tr>
+<td class="name">Random</td>
+<td class="description">Use a single random opaque color.</td>
+<td class="python_value">-</td>
+<td class="cli_token">random</td>
+</tr>
+
+<tr>
+<td class="name">All random</td>
+<td class="description">Use a random color opaque for each neuron.</td>
+<td class="python_value">ColorScheme.RANDOM</td>
+<td class="cli_token">all-random</td>
+</tr>
+
+<tr>
+<td class="name">Color by branch type</td>
+<td class="description">Color the dendrites and soma with one color and
+the axon with other. Unless two full RBGA tuples are provided, the default
+color for dendrites and soma is red and the axon color is blue.</td>
+<td class="python_value">ColorScheme.BY_BRANCH</td>
+<td class="cli_token">by-branch [R G B A  R G B A]</td>
+</tr>
+
+<tr>
+<td class="name" style="padding-top: 15px;">Width dependent alpha channel</td>
+<td class="description">
+   <p>Blend between two colors based on the width of the neuron branches. The
+   blend is a non-linear interpolation that tries to imitate translucency
+   <span id="note"><a><sup>note</sup><span><span>(</span>
+   In fact the blend is a linear interpolation between the two colors using
+   a = 1 - exp(-width * 1/attenuation) as the interpolation coefficient. The
+   default attenuation is 2<span>)</span></span></a></span>. The blended
+   colors are computed from a primary and a secondary color. For zero width
+   branches the color to use is the primary color. For infinite width branches
+   the color is the secondary color. In practice, the non-linear blend
+   guarantees that the secondary color is the color used for thick dendrites
+   and the soma.</p>
+   <p>
+   The optional attenuation factor determines how quickly the color
+   interpolation falls from the seconday to the primary color as a function of
+   the width. It takes a real value >= 0 and if not provided defaults to 2.
+   </p>
+</td>
+<td class="python_value">ColorScheme.BY_WIDTH</td>
+<td class="cli_token">by-width[@attenuation] [R G B [A]]</td>
+</tr>
+</table>
+<p />
+\endhtmlonly
+
+<table id="neuron_target_prop_illustration">
+<tr>
+<td>\image html minicolumn_solid.png</td>
+<td>\image html minicolumn_color_by_branch.png</td>
+<td>\image html minicolumn_alpha_by_width.png</td>
+</tr>
+<tr><td>Solid</td><td>Color by branch type</td><td>Width dependent alpha channel</td></tr>
+</table>
+
+### Neuron target attributes in the command line
+
+In the command line, neuron target properties are given to the \c \-n,
+\c \-\-neurons and \c \-\-target after. The full specification is:
+<table style="border: 0px; margin-left: auto; margin-right: auto">
+<tr><td style="text-align: right;">\em options</td><td>=</td><td>[\em display_mode [\em coloring] ]</td></tr>
+<tr><td style="text-align: right;">\em display_mode</td><td>=</td><td>\c soma | \c detailed | \c no_axon | \c skeleton | \c none</td></tr>
+<tr><td style="text-align: right;">\em coloring</td><td>=</td><td> *RGB*[*A*] | \c by\-branch | \c alpha\-by\-width[\@attenuation] [*RGB*[*A*]]</td></tr>
+</table>
+
+Regarding the coloring options, the solid coloring scheme is used if just
+an *RGB*[*A*] tuple is given. For \c alpha\-by\-width, if no optional primary
+color is given, (0, 0.5, 1.0, 0.0) will be used by default. The secondary color
+cannot be changed from the command line, instead it is computed as the
+primary color plus (0.5, 0.5, 0.5) added to the RGB channels, clamping each
+channel to 1.0; the A channel is set to 1. If no attenuation value is given,
+it defaults to 2.
+
+### Neuron target attributes in the Python shell
+
+From a scene object that handles a neuron target it is possible to change:
+- The representation mode.
+- The coloring scheme and base color.
+- the color maps used for simulation mapping.
+These attribute are accessible from \pybind{Scene.Object.attributes}. The
+display mode is \c **mode**, the color scheme is \c **color_scheme**, the base
+color for the solid and by-width schemes is \c **color**
+or \c **primary_color** and the secondary color for by-width
+is \c **secondary_color**. The attribute values are those listed in the two
+tables above. Base colors are specified as lists with 3 or 4 float numbers in
+the range [0..1]. To change which is the maximum branch order of the sections
+that will be visible assign integer values to \c **max_visible_branch_order**,
+the special value -1 is reserved to mean that all sections are visible.
+
+For color schemes that accept additional parameters, these parameters can be
+provided assigning an additional AttributeMap to the attribute \c **extra**.
+In particular, \c alpha\-by\-width accepts the attribute \c **attenuation** to
+modify the equation that modulates the color interpolation.
+
+Color maps are collected in an attribute called \c **colormaps**. This
+attribute is unset by default, implying that the colormaps are taken from the
+View object. This attribute can receive an AtributeMap in which different
+\pybind{ColorMap}s are assigned. In particular you can set color maps on the
+attributes \c **compartments** and \c **spikes**. When the attribute map is
+reset, the color maps are cleared. For more details about color maps see \ref
+simulation_colormaps and \ref per_object_colormaps.
+
+After changes to the attribute map are made, they become effective after
+calling the \pybind{Scene.Object.update, **update**} method of the handler.
+
+For example, given a neuron target handler **n**  the code to change the
+display mode to soma and paint it red the code would be:
+\code{.py}
+$ n.attributes.color = [1, 0, 0]
+$ n.attributes.color_scheme = ColorScheme.SOLID
+$ n.attributes.mode = RepresentionMode.SOMA
+$ n.update()
+\endcode
+
+For changing the color scheme to be by-width with an attenuation factor of 1.2
+\code{.py}
+$ n.attributes.color_scheme = ColorScheme.BY_WIDTH
+$ n.attributes.extra = AttributeMap()
+$ n.attributes.extra.attenuation = 1.2
+$ n.update()
+\endcode
+
+\warning These modifications have some caveats:
+- A neuron target that was added to the scene using **no_axon** cannot be
+  changed to **detailed** afterwards.
+- A neuron target that was added to the scene using **soma** can be upgraded
+  to **detailed** or **no_axon**, but that will trigger the creation of the
+  additional models.
+
+\subsection synapse_attributes Synapse target attributes
+
+Synapse targets attributes can only be specified in the Python shell. This
+attributes can be passed to the functions that add synapses to the scene
+and can be modified later on using the scene object handler (modifying
+the values of \pybind{Scene.Object.attributes}).
+The available attributes are the \c **radius**, \c **color** and \c **surface**.
+The radius units are microns and the default value is 1. The default color is
+(1, 0.6, 0.2, 1) for afferent and (0.5, 0.2, 1.0, 1) for efferent synapses. The
+surface attribute toggles the positioning of the synapses on either the surface
+of the geometry or in the center. Note that the position of the synapses cannot
+be changed after they were added to the scene.
+
+After changes to the attribute map are made, they become effective after
+calling the \pybind{Scene.Object.update, **update**} method of the handler.
+
+\section simulation Displaying simulation
+
+\subsection simulation_types Simulation data types
+
+Two types of simulation reports are supported by %RTNeuron: compartment
+reports from Bluron and spike time reports from Bluron or NEST. At the moment
+simulation data is a scene property and only one report of each type can be
+mapped to a scene at a given time.
+
+Compartment reports are the main reports produced by the simulator. These
+reports contain scalar simulation values for the electrical compartments of
+the cell dendrites and somas (and a small portion of the axon). The values are
+mapped onto cells using an indexing scheme provided by the simulation.
+
+\note
+By default, report frames are loaded on demand and only one frame is kept in
+memory at a time. This keeps the memory footprint low, but increases the
+latency to get the next frame, this effect is quite noticeable with large
+simulations (>1K neurons) when loading from a regular SATA drive. If enough
+host memory is available, this problem can be overcome from the python shell,
+calling the method \c preload(*begin*, \c *end*) from \c
+bbp.Compartment_Report_Reader, which will load in memory all the frames
+within the given time window. As of now, there is no way to access the reader
+created by \c rtneuron and attached to the scene, so the solution is to do
+the whole process manually.
+
+A typical voltage compartment report mapped onto cell membranes looks like
+the following picture:
+
+\image html voltage_report.png
+
+Spike reports are a collection of pairs of spike times and neuron GIDs.
+This information is used to show how the action potential propagates along
+the axon. By default, the visual representation is an engrossment and color
+change from black to white that travels along the axon followed by a decay
+back to normal. The color map can be changed as described \link
+simulation_colormaps below\endlink. The action potential travels at a fixed
+propagation delay of 300 um/ms. The decay tail can be configured by the
+user. The following figure shows a spike at the beginning of the axon with 2
+different spike tail lengths.
+
+\image html spikes.png Visualization of spikes using two different decay times.
+
+When a spike report has been loaded but no compartment report has been loaded,
+the spike data will be used to make somas flash when a spike occurs. By
+default, somas are rendered black (transparent is alpha blending is enabled)
+at resting state and they become white (and fully opaque) at spike times,
+gradually turning back into black during the spike tail time.
+
+\subsection load_simulation Loading simulation data
+
+### From the command line
+
+To specify a compartment report, use the command line option \c -r,
+\c \-\-report. If no report with that name exists in the BlueConfig, or the
+report is not accessible, it will be ignored.
+
+Spikes are enabled using the command line option \c -s, \c \-\-spikes. If this
+option is provided, %RTNeuron will query the content of the \c SpikesPath
+field of the blue config loaded and load the spikes from there. A path to a
+file can also be provided explicitly following \c -s/\c \-\-spikes. For Bluron
+reports, the expected file extension is \c .dat. For NEST reports, the
+extension is \c .gdf and shell wildcards are also accepted (* and ?). Wildcards
+must be passed to %RTNeuron and not interpreted by the shell, so if the path
+contains wildcards, the argument must be quoted in the command line
+invocation.
+
+### In the Python shell
+
+Using \pyfunc{display_circuit}, compartment and spike reports are loaded by
+passing the report name and the spike file name as the \c report and \c spikes
+arguments respectively.
+
+From the console it is possible to change the reports being displayed at any
+moment. Reports can be assigned to scenes using \pybind{Scene.setSimulation},
+which is overloaded to accept either a
+<a href="https://developer.humanbrainproject.eu/docs/BBPSDK/latest/classbbp_1_1_compartment_report_reader.html"> **bbp.CompartmentReportReader** </a> or
+a <a href="https://developer.humanbrainproject.eu/docs/BBPSDK/latest/classbbp_1_1_spike_report_reader.html"> **bbp.SpikeReportReader** </a> object.
+To facilitate the process, the \c rtneuron module provides two helper functions:
+
+- \pyfuncargs{apply_compartment_report,simulation\, scene_or_view\, report_name}
+
+  This function creates a compartment report reader for the given simulation and
+  report name and attaches it to a scene or the scene associated with a view.
+
+- \pyfuncargs{apply_spike_data,simulation_or_filename\, scene_or_view}
+
+  This function creates a spike report reader for a file path or the spike
+  data referenced by an simulation and attaches it to a scene or the view
+  associated with a scene.
+
+The Python shell has some predefined variables that can be used as input
+parameters for both functions (in your own scripts it is your
+responsibility to create them), see the description of the
+\link predefined_objects predefined variables\endlink for reference.
+
+Simulation data readers can also be created and attached manually. See
+the BBPSDK reference for
+<a href="https://developer.humanbrainproject.eu/docs/BBPSDK/latest/classbbp_1_1_compartment_report_reader.html">compartment</a> and
+<a href="https://developer.humanbrainproject.eu/docs/BBPSDK/latest/classbbp_1_1_spike_report_reader.html">spike</a>
+report readers.
+
+\subsection simulation_playback Simulation display and playback
+
+With \c rtneuron, simulation playback is started automatically after
+the targets are loaded. Simulation is played back until the end and then
+stops. The time window of interest can be selected with the command line
+options \c \-\-sim\-window (\c \-w) and the simulation speed with
+\c \-\-sim\-step. The actual interest window is computed as the intersection
+of the user given window and the information retrieved from the BlueConfig
+for the loaded report.
+For spike visualization, the user
+can select during how much time there must be a visual indication of a spike
+in the soma or along the axon, this time is the *spike tail*. In somas this
+indications is gradual color change from white (a spike just occurred) to
+black (no spike). On the axons, the spike leaves a trail as it travels the
+axon, the length depends on the spike tail time. The spike tail can be adjusted
+from the command line with the option.
+\c \-\-spike\-tail.
+
+Finer control on playback is provided by the Python API. The object
+\pybind{SimulationPlayer} (**app.player** in the embedded shell) provides the
+interface to simulation playback. All parameters are controlled from there
+except toggling simulation display on and off, spike trails and color maps
+(see below), which are \pybind{View} attributes and properties. Refer to the
+reference manual or the interactive help for details.
+
+\subsection simulation_colormaps Color maps
+
+Each view has two color maps to translate compartmental simulation values
+and spikes into colors. A color map is defined by a list of control points
+which maps discrete values to colors. For values that fall between two control
+points, the color assigned is a linear interpolation between the colors of the
+control points just above and below that value. Values above the maximum and
+below the minimum of the control points take the color of those control points
+respectively.
+
+For compartment reports, the color map is sampled using the simulation values.
+For spike reports the color map is expected to be defined in the range 0 to 1.
+Given the current timestamp \c t and the time of a spike \c t_s, the value
+\c a = (\c t - \c t_s) / \c spike_tail is computed. That is the value used
+to sample the color map, clamped to [0, 1] if necessary.
+
+The default color map for compartmental data has been crafted to display
+membrane voltage and is shown in the image below.
+
+\image html default_colormap.png Default color map. The color map is defined in the range -80 to -10. The bottom half shows the color map with opaque colors and the upper half with the alpha channel enabled over a checkerboard background.
+
+The color map can only be changed using the Python API. For that purpose there
+is a \pybind{ColorMap} class. This class has a method
+\pymethod{ColorMap,setPoints} that takes a dictionary of (value, RGBA) pairs to
+define the control points (colors must always be 4-element tuples, i.e. the
+alpha value can't be omitted). Once the control points are established, they
+cannot be changed (only completely replaced).
+
+Views handle color maps using an attribute called \c **colormaps**. This
+attribute is an AttributeMap itself and it contains two attributes. The
+first attribute is called \c **compartments** and it contains the
+\pybind{ColorMap} that is used to assign colors to compartmental simulation
+data. The second attribute is \c **spikes** and contains the colormap used
+to render spikes. You can modifiy the color maps directly or assign new
+ColorMaps to the mentioned attributes. It is an error trying to assign
+any other value different from a \pybind{ColorMap} to a colormap attribute.
+The view will detect any changes in the color maps and trigger the rendering
+automatically to show the new color map. The same color map can be assigned to
+multiple views. The color map is applied to render a \pybind{View} only
+when the \c **display_simulation** attribute of that view is set to on,
+otherwise, the target coloring attributes will be used.
+
+The code below shows how to create a color map that goes from transparent
+black at -65 to opaque green at -40 and enable it in the predefined view:
+\code{.py}
+c = ColorMap()
+c.setPoints({-65: [0, 0, 0, 0], -40: [0, 1, 0, 1]})
+view.colormaps.compartments = c
+\endcode
+
+The image below shows this color map compared to the default ones, with
+transparency enabled for both:
+<table class="collapsed_table">
+<caption>Comparison of the same simulation frame using two different
+color maps with transparency.</caption>
+<tr>
+<td>\image html colormap_default.png Default, voltages</td>
+<td>\image html colormap_black2green.png Black to green, voltages</td>
+</tr>
+<tr>
+<td>\image html colormap_default_spikes.png Default, spikes</td>
+<td>\image html colormap_black2green_spikes.png Black to green, spikes</td>
+</tr>
+</table>
+<!--
+camera views
+voltage: ([54.983375549316406, 655.9672241210938, 542.918701171875],
+          ([0.0, 0.0, 1.0], 0.0))
+spikes: ([85.87651824951172, 480.4144592285156, 388.8894348144531],
+         ([0.0, 0.0, 1.0], 0.0))
+target AllL5CSPC
+timestamp 6ms
+-->
+
+It is possible to modify the relative locations of the control points using
+\pymethod{ColorMap,setRange}. This method sets the minimum and maximum values
+of the control points and adjusts the position of all the others preserving the
+relative distance between them (internally, this method is lightweight so it
+can be used to change the color map in interactively).  The image below shows
+a simulation frame using the default color map and two range adjustments.
+
+<table class="collapsed_table">
+<caption>Comparison of the same simulation frame using 3 different ranges
+adjustments of the default color map.</caption>
+<tr>
+<td>\image html colormap_range_ex1.png [-80, -10]</td>
+<td>\image html colormap_range_ex2.png [-70, -40]</td>
+<td>\image html colormap_range_ex3.png [-67, -48]</td>
+</tr>
+</table>
+
+All images with voltage data come from time stamp 6 ms of the
+\c allCompartments report of the test data. For spike data the time stamp
+10 ms was used.
+
+For compartmental simulation data and targets whose coloring scheme is
+*by width* the alpha channel of the final colors are computed by multiplying
+the alpha channel from the color map and the *branch width to color* function
+explained in \ref neuron_target_options. The image below shows a comparison of
+the same simulation frame with and without *by width*:
+
+<table class="collapsed_table">
+<caption>Comparison of the same simulation frame using the alpha channel from
+the color map and modulating it by the branch width.</caption>
+<tr>
+<td>\image html colormap_default.png Regular transparency</td>
+<td>\image html colormap_alphabywidth.png Alpha modulated by width</td>
+</tr>
+</table>
+
+\subsubsection per_object_colormaps Per object color maps
+
+Color maps for simulation can also be specified on a neuron object handler
+basis using the Python API. This is true for both the top level scene handlers
+and subhandlers obtained with \pybind{Scene.Object.query}. When a color map
+for compartmental data or spike activity is set at a handler, that color map
+overrides the color map from the view for the neurons contained by the
+handler. For temporary handlers the changes are persistent even after the
+handler is deleted.
+
+To set a color map on a neuron object you have to first create an empty
+\pybind{AttributeMap} on the object attribute \c **colormaps**. This attribute
+map is analagous to the \c **colormaps** attribute of Views. To assign
+a color map for compartments set the ColorMap object on the
+attribute \c **colormaps.compartments**, and for spikes assign it
+to \c **compartments.spikes**
+
+Changes on the color maps are tracked by neuron object handlers, however
+they only become effective once the \pybind{Scene.Object.update, **update**}
+method of the handler is called. In the case there are neuron object handlers
+with overlapping neuron sets, the last one which was applied prevails.
+
+Since it is not possible to remove attributes from an AttributeMap, the
+way to clear the color maps a subset of neurons is assigning  (notice that
+there is no way of clearing a specific color map)
+
+\warning For implementation reasons, when a colormap is applied to the
+a neuron handler returned by \pybind{Scene.Object.query, **query**}, the
+handler must be kept alive to ensure correct rendering results. If the handler
+is destroyed, the results for spherical somas are undefined (the observable
+behaviour is that they will receive another colormap if the atlas is updated).
+
+<!--
+ ./bin/rtneuron -b ~/bbp/data/simulations/vizCa2p0_1x7/BlueConfig --target Slice soma --shell -r compartments
+-->
+\code{.py}
+
+exc = ColorMap()
+exc.setPoints({-80: [1, 0, 0, 0], -60: [1, 0, 0, 0.1], -10: [1, 1, 0, 1]})
+view.attributes.colormaps.compartments = exc
+
+inh = ColorMap()
+inh.setPoints({-80: [0, 0, 1, 0], -60: [0, 0.2, 1, 0.1], -10: [0, 1, 1, 1]})
+all = view.scene.objects[0]
+subset = all.query(simulation.gids('Inhibitory'))
+subset.attributes.colormaps = AttributeMap()
+subset.attributes.colormaps.compartments = inh
+subset.update()
+
+\endcode
+
+
+<table class="collapsed_table">
+<caption>Two renderings of the *Slice* target from /gpfs/bbp.cscs.ch/project/proj3/simulations/vizCa2p0_1x7/BlueConfig showing membrame voltage at somas.</caption>
+<tr>
+<td>\image html default_colormap_somas.png Default colormaps</td>
+<td>\image html multiple_colormap_somas.png Different colormaps for inhibitory and excitatory</td>
+</tr>
+</table>
+
+
+\section cameras Camera handling
+
+\subsection camera_object The camera object
+
+Every \pybind{View} has an associated \pybind{Camera} which takes care of the
+projection type and parameters as well as the camera position and orientation.
+
+The camera is created automatically for each view and cannot be replaced, but
+inside the Python shell there are methods to choose the projection type and
+camera position. Perspective projections can be specified using
+\pymethod{Camera,setProjectionFrustum} and set with
+\pymethod{Camera,setProjectionPerspective}. Orthographic projections are
+specified with \pymethod{Camera,setProjectionOrtho}. The functions
+\pymethod{Camera,makeOrtho} and \pymethod{Camera,makePerspective} can be used
+to switch between the two projection types,the parameters of each projection
+type and handled independently, so they are preserved when switching between
+one and the other. The camera position can be changed using
+\pymethod{Camera,setView} and \pymethod{Camera,setViewLookAt}. The current
+view position and orientation can be recovered with \pymethod{Camera,getView},
+this function returns a tuple <code>(position, (axis, angle))</code>, where
+the angle is in degrees. Follow the links to the reference for further
+details.
+
+The default projection comes from the default Equalizer configuration. It is
+a perspective projection with a vertical field of view of 53º approximately.
+
+\warning Currently, view frustum culling and spherical somas do not work
+correctly with orthographic projections. It's advisable to use
+<code>--no-cuda</code> to work with orthographic projections.
+
+\subsection camera_paths Camera paths
+
+A camera path is a list of camera key frames (position, orientation and
+stereo correction factor) with a timestamp. %Camera paths can be created
+and modified using the Python shell as well as loaded from and saved to
+files. When a camera is playing back a camera path, its position is updated
+frame by frame according to the playback parameters described below. This
+subsection describes how to create camera paths, how to play back camera paths
+from the command line as well as the Python shell is explained in \ref
+camera_path_manipulator.
+
+\subsubsection camera_path_creation Creating camera paths
+
+%Camera paths can be created by hand, writing camera path files in a text
+editor, but this is only recommended for camera paths with 1 or 2 key frames.
+For camera paths consisting of several key frames the best option is to build
+them inside the Python shell and then saving the result to a file. %Camera
+paths are represented, saved and loaded using the CameraPath class.
+
+A camera path is a collection of \pybind{CameraPath.KeyFrame} objects. A key
+frame specifies a position, orientation and stereo correction. Once created,
+key frames can be added to a camera path using
+\pymethod{CameraPath,addKeyFrame}, which takes a timestamp in **seconds** and
+a key frame. An alternative method is to call addKeyFrame with a view as input
+parameter. In this case all the parameters are taken from the view and its
+camera:
+\code{.py}
+$ path = CameraPath()
+$ k = CameraPath.KeyFrame()
+$ k.position = [0, 0, 1000]
+$ # k.orientation and k.stereoCorrection left at default values
+$ path.addKeyFrame(0, k)
+$ # The non-default constructor takes exactly 3 arguments
+$ path.addKeyFrame(1, CameraPath.KeyFrame([0, 0, 2000], ([0, 0, 1], 0), 1))
+$ path.addKeyFrame(2, view)
+\endcode
+Key frames can be queried, removed or replaced using their index in the path
+and the whole key frame list can be also extracted.
+
+%Camera paths can be saved and loaded using \pybind{CameraPath.save} and
+\pybind{CameraPath.load}.
+
+\subsubsection camera_path_helpers Predefined Camera paths
+
+Some predefined camera paths are already provided. These camera paths can
+be created using the functions found in the module
+**rtneuron.util.camera.Paths**. The most relevant functions are:
+- \pyfuncargs{util.camera.Paths.front_view,blueconfig\, targets\, \*\*kwargs}
+  Creates a camera path with a top front view (y axis pointing up) of a target.
+- \pyfuncargs{util.camera.Paths.make_front_view,view\, \*\*kwargs}: Computes
+  a front view and applies it to the camera of a view.
+- \pyfuncargs{util.camera.Paths.top_view,blueconfig\, targets\, \*\*kwargs}:
+  Creates a camera path looking from the top of a target down the negative
+  y axis.
+- \pyfuncargs{util.camera.Paths.make_top_view,view\, \*\*kwargs}: Computes a
+  top view and applies it to the camera of a view.
+- \pyfuncargs{util.camera.Paths.flythrough,blueconfig\, target\, duration=10\, \*\*kwargs}:
+  Creates a camera path with a camera travelling from a distant viewpoint to a
+  close up near the centroid of the selected target. The travelling can be
+  slowed down with optional parameters.
+- \pyfuncargs{util.camera.Paths.front_to_top_rotation,blue_config\, targets\, duration=10\, \*\*kwargs}:
+  Creates a camera path with front view to top view rotation as shown below:
+
+  \image html front_to_top_path.png Front to top rotation example
+- \pyfuncargs{util.camera.Paths.rotate_around,blue_config\, targets\, duration=10\, \*\*kwargs}:
+  Creates a camera path with a rotation around a target as shown below:
+
+  \image html rotation_path.png Rotate around example
+
+All the functions return a camera path, see the section on \link
+camera_path_manipulator camera path manipulators\endlink to learn how to
+attach the camera path to a view. The functions \c make_front_view and \c
+make_top_view are different from the rest. These functions take a view as
+argument, and use it to inspect the scene attached to the view, create a key
+frame and apply it to the view (no camera path is created).
+
+\subsubsection camera_path_recording Recording camera paths
+
+It is possible to record a camera path while the camera is manipulated
+interactively. For that purpose there is a helper object called
+CameraPathRecorder. This object takes an application and view in its
+constructor. To start recording a camera path call \c startRecording. Each
+time a frame is issued, the current camera position will be registered in
+a camera path. Use \c stopRecording to stop registering and \c getCameraPath
+to retrieve the path. Notice that key frames are only registered when a frame
+is issued, so once you stop moving the camera no spurious key frames will be
+generated before you can save it.
+
+\note The programming reference for CameraPathRecorder is not available online,
+but it is present in the Python console.
+
+\subsubsection camera_path_file_format Camera path file format
+
+A camera path file is a plain text file with a timestamp in milliseconds and
+key frame per line with the following format:
+\htmlonly<pre>
+timestamp translation_x translation_y translation_z rotation_a rotation_b rotation_c rotation_d stereo_factor
+</pre>\endhtmlonly
+All numbers are floating point numbers. The fields \c rotation_(a,b,c,d)
+are a quaternion that specifies the camera orientation as a rotation from
+the default orientation (looking down the z axis and being y the up
+vector). Let a be the rotation angle in radians and x, y, z the rotation
+axis, the rotation fields are: sin(a/2)*x sin(a/2)*y sin(a/2)*x cos(a/2).
+The \c stereo_factor field is a multiplicative factor which is
+applied to the inter-ocular distance (More about stereo is discussed
+\ref stereo "this section").
+
+A camera path file looks like this:
+\htmlonly<pre>
+ 0   4170 2329 1090 0.285096 0.568038 0.567425 0.523527 1
+ 250 4125 2449 1083 0.275059 0.573701 0.573202 0.516378 1
+ 500 4075 2567 1075 0.264962 0.579240 0.578855 0.509118 1
+</pre>\endhtmlonly
+
+The python code to print a key frame in the format used by camera path files
+can be found below:
+\code{.py}
+def keyframe(view) :
+  import math
+  pos, (axis, angle) = view.camera.getView()
+  half_angle = math.radians(angle * 0.5)
+  s = math.sin(half_angle)
+  return ("%f %f %f %f %f %f %f %f" % (
+              pos[0], pos[1], pos[2],
+              axis[0] * s, axis[1] * s, axis[2] * s, math.cos(half_angle),
+              view.attributes.stereo_correction))
+\endcode
+
+\subsection camera_manipulators Camera manipulators
+
+%Camera manipulators are objects that handle frame, mouse and keyboard
+events\htmlonly<span id="note"><a><sup>note</sup><span><span>(</span>Or even
+other devices in special cases<span>)</span></span></a></span>\endhtmlonly
+to modify the camera position and orientation. Each \pybind{View} contains a
+camera manipulator which is accessible by its property **cameraManipulator**.
+Manipulators can be replaced at any moment.
+
+\subsubsection camera_tackball_manipulator Trackball manipulator
+
+When a \pybind{View} is created a default camera manipulator is attached to
+it. This default manipulator emulates a trackball device with the mouse. The
+manipulator has an initial camera position and orientation and a reference
+point, these parameters are jointly known as the \c home \c position. Using
+the mouse it is possible to pan, travel and rotate the camera. For rotation
+move the mouse while pressing the left button, the camera will pivot on the
+reference point. For panning use the middle button, panning also moves the
+reference point for rotation. To move the camera back and forth use right
+button and move the mouse back and forth, the camera speed is proportional to
+distance to the reference point so, the closer to the point, the slower the
+camera moves. The camera and the reference point are reset to the home
+position when the space bar is pressed.
+
+The keyboard can also be used to emulate the mouse. Use the cursor keys
+for camera panning. For rotations around the pivot point use they cursor keys
+with the Control key pressed. Use shift with the down and up cursors to move
+the camera back and forth.
+
+If the scene attached to the view is updated, the home position is updated
+and the camera is reset to the initial position. The home position computed
+has the center of the circuit as the reference point, the y-axis as the up
+direction and places the camera along the z axis at a position where all
+somas fit in view. The auto update behaviour can be overridden setting
+the view attribute \c **auto_compute_home_position** to false. The home
+position can also be queried and changed manually in the Python shell with
+\pymethod{TrackballManipulator,getHomePosition} and
+\pymethod{TrackballManipulator,setHomePosition}.
+
+\subsubsection camera_path_manipulator Camera path manipulator
+
+There is a specific camera manipulator for camera paths, called
+\pybind{CameraPathManipulator}. This manipulator can be created and assigned to
+a view using the Python shell or initialized from the command line.
+
+To load a camera path from the command line use the option
+<code>--path path_file</code>.  This will create a camera manipulator that
+will be assigned to all views.  Playback will start as soon as the scene shows
+up. By default, the camera path is played back using wall clock time, but if
+the option <code>--path-fps fps</code> is used, the camera path will advance
+1/fps seconds each frame (regardless of the real rendering time).
+
+When <code>--path</code> is used in combination with
+<code>--grab-frames</code>, the rendered frames will be recorded until the end
+of the camera path is reached (the rendering will continue looping, but no
+more frames will be recorded). Together with <code>--path-fps</code> and
+<code>--frame-count</code>, it is possible to record the exact frames needed
+to encode a movie of a camera path.
+
+Within the Python shell the way to play back a camera path is to create a
+\pybind{CameraPathManipulator} object, assign the path to it
+with \pymethod{CameraPathManipulator,setPath} and assign the manipulator to
+the **cameraManipulator** property of the target \pybind{View}. In a camera path
+manipulator it is possible to change the delay between camera path frames
+(wall clock or fixed), the playback start and stop time and the looping mode
+(swing, loop or no loop). Please see the \pybind{CameraPathManipulator}
+reference for further details.
+
+%Camera paths are played using spline interpolation for the camera position
+except for camera paths with only two key frames, in that case linear
+interpolation will be used (linear interpolation can be forced unconditionally
+setting the environmental variable RTNEURON_FORCE_LINEAR_PATH_INTERPOLATION
+to 1). For camera rotation, SLERP interpolation is always used in order to
+yield constant rotation velocity and minimal torque.
+
+\subsubsection space_mouse_manipulator SpaceMouse manipulator
+
+When %RTNeuron is build with VRPN support it is possible to control the
+camera using a SpaceMouse device exported by a VRPN server. The folder where
+the server is set up will contain a \c vrpn.cfg file that holds
+the identifiers of the devices enabled by it. To configure the use of a
+SpaceMouse manipulator, this file must contain the line
+<code>vrpn_3DConnection_XXX device_id</code>, where \c XXX is the specific
+model of the SpaceMouse, e.g. <code>vrpn_3DConnection_Navigator_for_Notebooks
+device0</code>. Most devices are already present in the file and their
+configuration just needs to be uncommented. To start the server,
+execute \c vrpn_server and leave the process running.
+
+The command line option <code>--use-spacemouse device_name\@host</code> will
+enable the use of the SpaceMouse device as a camera manipulator, and specify the
+device name and host where it is located.
+
+Inside the Python shell there is an object called
+\pybind{VRPNManipulator}. This object takes in its constructor the device type
+and a device URL <code>device_name\@host</code>. To use it, instantiate the
+object using <code>VRPNManipulator.DeviceType.SPACE_MOUSE</code> as device
+type and assign it to a view.
+
+Similarly to the way the default camera manipulator
+(\ref camera_tackball_manipulator) works, the SpaceMouse manipulator has
+a home position. Pushing and pulling the device cap in any direction is
+translated into panning and zooming in or out of the 3D scene view; tilting
+and twisting can be used to orbit around the 3D model. The camera speed is
+proportional to distance to the reference point. The camera and the reference
+point can be reset by pressing any of the two physical buttons on the device
+sides.
+
+\subsubsection wiimote_manipulator Wiimote manipulator
+
+When %RTNeuron is built with Wiimote support\htmlonly<span id="note"><a><sup>
+note</sup><span><span>(</span> This is not the case of the official packages
+actually works is difficult to describe and OSG dependent.
+<span>)</span></span></a></span>\endhtmlonly it is possible to control the
+camera using a Wiimote device exported by a VRPN server. In this case, the line
+to be added or uncommented is <code>vrpn_WiiMote WiiMote0 1 0 0 1</code>.
+The command line option <code>--use-wiimote device_host\@host</code> is
+used for this purpose.
+
+As in the SpaceMouse case, \pybind{VRPNManipulator} is used to create the camera
+manipulator for the Wiimote. Instantiate the object using
+<code>VRPNManipulator.DeviceType.WIIMOTE</code> as the first argument and
+the VRPN URL as the second one and assign it to a view.
+
+In the case of the use of a Wiimote device, the camera can be manipulated by
+using exclusively the \c Nunchuk extension that can be attached to the main
+controller. By default, uniquely handling the main joystick will pan the camera,
+whereas using it in conjunction with the C button in the back of the controller
+will make it travel back and forth the z axis. On the other hand, if the
+joystick is handled while pressing the Z button below, the camera will rotate
+around the model.
+
+\section movies Frame capture and movie generation
+
+It is possible to save the frames rendered by %RTNeuron into files using
+both command line options and the Python interpreter. For the highest
+quality results the interpreter mode is advised because idle mode
+anti-aliasing does not work in combination with frame grabbing for the
+command line options.
+
+\subsection cli_frame_grabbing Frame capture from the command line
+
+In order to capture frames from the command line, use the option
+<code>--grab-frames</code>. This option will make %RTNeuron dump a file
+per view and rendered frame from the moment the circuit is loaded and
+displayed. By default, the files are dumped into the working directory using
+file names like <code>prefix_nnnnnn.png</code>, where prefix is \c frame if
+there a single view or \c prefix_view_ if there are two or more views, being
+\c view the name of the view taken from the Equalizer configuration (the file
+format and common file prefix can be changed with <code>--file-format</code>
+and <code>--file-prefix</code>, the common file prefix can include an
+absolute path).
+
+Frame recording will be finished in any of the following cases, whichever
+happens first (apart from application exit):
+- If a camera path with more than one key frame (i.e. the begin and end
+  times are different) has been provided, when the camera path end is reached.
+- If a simulation report has been provided, when the end of the simulation
+window has been reached.
+- If the command line option <code>--frame-count <em>frames</em></code> has
+been given, after *frames* frames have been rendered starting from the first
+frame in which the circuit is displayed. In this case, the application will
+also exit automatically. This option is ignored when <code>--shell</code>
+is also present in the command line.
+
+\note The results of the recording are undefined if the Equalizer layout is
+changed on-the-fly. The most probable outcome is that no frames will be
+captured for the views that were not active at application start up.  For more
+information on layouts (and other advanced Equalizer configuration) refer to
+\ref display_config.
+
+\subsection console_frame_grabbing Frame capture from the Python interpreter
+
+Inside the Python interpreter (or a Python script) there are 3 methods to
+dump the content of views into files. One of them is using
+\pybind{RTNeuron.record} \pybind{RecordingParams}, the other two
+require direct manipulation of view objects.
+
+\subsubsection rtneuron_record The RTNeuron.record function
+
+The \pybind{RTNeuron.record} function takes an object with the recording
+parameters and triggers the generation and dumping of frames until one of the
+stop conditions is met. The recording parameters are given in a
+\pybind{RecordingParams} object. The parameters configure:
+- The camera path and whether frame recording must stop at the end of the
+camera path or not. The delta time between frames for the camera path can be
+set to be real-time or a fixed delay between frames.
+- The simulation time window and the delta time between simulation frames
+- The maximum number of frames to be rendered.
+- Additional parameters to set the file image prefix, format and output
+  directory.
+.
+Please refer to the \pybind{RecordingParams,reference} to find the
+actual names, types and units of the parameters.
+
+When \pybind{RTNeuron.record} is called frame grabbing
+starts and frames are issued advancing the camera path and simulation
+time stamp automatically as required, until one of the stop criteria is met:
+- The camera path end is reached and \c stopAtCameraPathEnd was set to true.
+- The end of the simulation window is reached.
+- The maximum number of frames to render is reached.
+.
+Time intervals are open on the right (that means that from 0 to 1 s at
+100 ms intervals, 10 frames will be rendered and not 11).
+
+The function call is non-blocking, to wait for the last frame to be issued use
+\pybind{RTNeuron.waitRecord}. This is the best way
+to guarantee that all frames are generated when running from a script
+instead of the interactive console.
+
+This method does not considered the existence of several views. Despite
+frames will be dumped for all views, the file names used will collide, so
+the view from which frames are finally saved is undefined.
+
+\subsubsection view_frame_grabbing_api View API for frame grabbing
+
+A \pybind{View} object has two methods related to frame grabbing:
+
+- \pybind{View.snapshot}: This methods takes an as input
+the name of the output file. It will trigger the rendering of a frame and
+write it to the output file. If idle anti-alias is enabled, the frame will be
+grabbed and dumped once all the accumulation steps are done (this
+behaviour can be changed through the View attribute \c **snapshot_at_idle**),
+for this reason this is the recommended methods for production quality image
+generation. The file name used must include the extension, any file format
+supported by OpenSceneGraph will be accepted, for unsupported file formats
+an error message will be printed. In multichannel configurations, this method
+will only work on the first destination channel by default. If you want to
+capture a snapshot of all channels, add "%c" to the output file name. That
+string will be replaced by the channel name in order to generate one file
+per channel.
+
+- \pybind{View.record}: This function can be used to turn
+on and off frame grabbing for a particular view. While frame grabbing is
+enabled, every rendered frame will be dumped to a file using the format
+<code>prefix_nnnnnn.png</code>, where *prefix* is the name of the view
+and *nnnnnn* is the frame number (if the name of the view in the Equalizer
+configuration is empty, "frame" will be used by default).
+The frame counter is reset to 0 every time record is enabled. The file name
+prefix and image file format of the image files generated can be configured
+modifying the view attributes \c **output_file_prefix**
+and \c **output_file_format**, when \c **output_file_prefix** is an empty
+string, the default prefix described before is used instead.
+
+*/
+
+}
+}

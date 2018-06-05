@@ -1,0 +1,81 @@
+#Equalizer 1.1 ascii
+server
+{
+    connection { hostname "localhost" port 5240 }
+    config
+    {
+        appNode
+        {
+             connection { hostname "localhost" }
+             pipe
+             {
+                 window
+                 {
+                     viewport [ 100 200 500 500 ]
+                     channel { name "channel1" }
+                 }
+             }
+             pipe
+             {
+                 window
+                 {
+                     viewport [ 650 200 500 500 ]
+                     channel { name "channel2" }
+                 }
+             }
+        }
+
+        observer { name "observer1" }
+        observer { name "observer2" }
+        layout
+        {
+            view
+            {
+                 name "view1"
+                 observer "observer1"
+                 viewport [ 0.0 0.0 0.5 1.0 ]
+            }
+            view
+            {
+                 name "view2"
+                 observer "observer2"
+                 viewport [ 0.5 0.0 0.5 1.0 ]
+            }
+        }
+
+        canvas
+        {
+            layout 0
+
+                wall
+                {
+                    bottom_left  [ -.32 -.32 -.75 ]
+                    bottom_right [  .32 -.32 -.75 ]
+                    top_left     [ -.32  .32 -.75 ]
+                }
+
+            segment
+            {
+                wall
+                {
+                    bottom_left  [ -.32 -.32 -.75 ]
+                    bottom_right [  .32 -.32 -.75 ]
+                    top_left     [ -.32  .32 -.75 ]
+                }
+                channel "channel1"
+                viewport [ 0.0 0.0 0.5 1.0 ]
+            }
+            segment
+            {
+                wall
+                {
+                    bottom_left  [ -.32 -.32 -.75 ]
+                    bottom_right [  .32 -.32 -.75 ]
+                    top_left     [ -.32  .32 -.75 ]
+                }
+                channel "channel2"
+                viewport [ 0.5 0.0 0.5 1.0 ]
+            }
+        }
+    }
+}
