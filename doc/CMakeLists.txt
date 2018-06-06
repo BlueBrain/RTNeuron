@@ -77,9 +77,6 @@ add_custom_target(release_notes
 set_target_properties(release_notes PROPERTIES
   EXCLUDE_FROM_DEFAULT_BUILD ON FOLDER "doxygen")
 
-set(GIT_DOCUMENTATION_REPO BBPDocumentation)
-set(COMMON_ORGANIZATION_NAME BBP)
-set(COMMON_PROJECT_DOMAIN ch.epfl.bluebrain)
 include(DoxygenRule)
 add_dependencies(${PROJECT_NAME}-doxygen ${TABLES} release_notes)
 

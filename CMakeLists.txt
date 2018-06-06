@@ -34,9 +34,10 @@ endif()
 
 set(RTNEURON_DESCRIPTION
   "Scalable rendering tool for the visualization of Neuron simulation data.")
-set(RTNEURON_ISSUES_URL "https://bbpteam.epfl.ch/project/issues/browse/BBPRTN")
-set(RTNEURON_MAINTAINER "Juan Hernando <jhernando@fi.upm.es>")
-set(RTNEURON_LICENSE Proprietary)
+set(RTNEURON_MAINTAINER_NAME "Blue Brain Project")
+set(RTNEURON_MAINTAINER_EMAIL "<bbp-open-source@googlegroups.com>")
+set(RTNEURON_MAINTAINER_MAINTAINER "${RTNEURON_MAINTAINER_NAME} ${RTNEURON_MAINTAINER_EMAIL}")
+set(RTNEURON_LICENSE GPLv3)
 set(RTNEURON_DEB_DEPENDS ipython3 python3-numpy python3-dev python3-decorator
   python3-pyqt5 python3-pyqt5.qtquick python3-opengl qml-module-qtquick-controls
   qml-module-qtquick-layouts qml-module-qtquick-dialogs
