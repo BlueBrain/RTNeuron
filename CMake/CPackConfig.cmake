@@ -18,7 +18,7 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/README" )
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_SOURCE_DIR}/doc/description" )
 
 # Debian packaging dependencies
 set(RTNEURON_PACKAGE_DEB_DEPENDS bbpsdk libopenscenegraph-dev

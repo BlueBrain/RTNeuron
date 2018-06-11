@@ -112,13 +112,6 @@ are:
 <td>-</td>
 </tr>
 
-<tr class="even">
-<td>BBP-SDK ${BBPSDK_VERSION}</td>
-<td>-</td>
-<td>-</td>
-<td>Git: ssh://bbpcode.epfl.ch/common/BBPSDK.git</td>
-</tr>
-
 <tr>
 <td>Brion ${BRION_VERSION}</td>
 <td>-</td>
