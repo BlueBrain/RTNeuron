@@ -27,8 +27,16 @@ import rtneuron as _rtneuron
 
 from . import camera
 
-def label_to_gids(label, simulation):
-    # This is a target name or regular expression
+def label_to_gids(label, resolver):
+    """Convert a cell set label or regular expression to a gid set (numpy u4).
+    label: str
+       A target name or regular expression. Regular expressions are only
+       accepted if resolver is a brain.Simulation.
+       The string can be appended a "%n" prefix to denote that a random fraction
+       of the gid set is requested, being n a real number between 0 and 100.
+    resolver: brain.Simulation or brain.Circuit
+       The object that will translate target names into gid lists.
+    """
     try:
         label, fraction = label.split("%")
         fraction = float(fraction) / 100.0
@@ -36,21 +44,28 @@ def label_to_gids(label, simulation):
         fraction = 1
 
     try:
-        gids = simulation.gids(label)
+        gids = resolver.gids(label)
     except Exception as e:
         # Trying as a regular expression
+        try :
+            names = resolver.target_names()
+        except AttributeError:
+            # This is a circuit, regular expressions are not supported.
+            raise e
         prog = _re.compile(label)
-        names = simulation.target_names()
         gids = _np.array((), dtype="u4")
         for name in names:
             match = prog.match(name)
             if match and match.group(0) == name:
-                gids = _np.append(gids, simulation.gids(name))
+                gids = _np.append(gids, resolver.gids(name))
 
         if len(gids) == 0:
             raise
 
     if fraction != 1:
+        if not gids.flags['W']:
+            # The array is readonly, need to copy it
+            gids = _np.array(gids)
         _np.random.shuffle(gids)
         gids = gids[0:int(round(len(gids) * fraction))]
         if len(gids) == 0:
@@ -58,17 +73,20 @@ def label_to_gids(label, simulation):
 
     return gids
 
-def key_to_gids(key, simulation):
+def key_to_gids(key, resolver):
     """Convert a target key to a GID array
 
     A key can be:
     - An integer
-    - An str with a target name or regex
+    - An str with a target name or regex (with an optional %n string appended,
+      being n a number between 0 and 100)
     - A numpy array of type u4, u8 or i4
     - An iterable of integers.
+
+    The resolver must be a brain.Simulation or brain.Circuit.
     """
     if type(key) == str:
-        gids = label_to_gids(key, simulation)
+        gids = label_to_gids(key, resolver)
     elif type(key) == int or type(key) == _np.uint32:
         # This is a single GID target
         gids = _np.array([key], dtype="u4")
@@ -86,10 +104,10 @@ def key_to_gids(key, simulation):
     # Now gids contains a numpy of GIDs or None if the target was not found
     return gids
 
-def targets_to_gids(targets, simulation):
+def targets_to_gids(targets, resolver):
     """Return a numpy array with the gids of the targets given.
     Targets can be any object accepted by key_to_gids or an iterable of any of
-    those."""
+    those, resolver must be a brain.Simulation or brian.Circuit"""
 
     if hasattr(targets, "__len__") and type(targets) is not str:
         try:
@@ -97,9 +115,9 @@ def targets_to_gids(targets, simulation):
         except:
             gids = _np.array([], dtype="u4")
             for target in targets:
-                gids = _np.append(gids, key_to_gids(target, simulation))
+                gids = _np.append(gids, key_to_gids(target, resolver))
     else:
-        gids = key_to_gids(targets, simulation)
+        gids = key_to_gids(targets, resolver)
     return gids
 
 

@@ -403,12 +403,28 @@ std::string Neuron::getElectrophysiologyType() const
     return _circuit->etypeNames[_etype];
 }
 
+brain::neuron::MorphologyPtr _getMorphology(brain::Circuit& circuit,
+                                            const uint32_t gid)
+{
+    return circuit.loadMorphologies(
+        {gid}, brain::Circuit::Coordinates::local)[0];
+}
+
 brain::neuron::MorphologyPtr Neuron::getMorphology() const
 {
+    auto& circuit = *_circuit->circuit;
     if (!_morphology)
     {
-        const auto uri = _circuit->circuit->getMorphologyURIs({_gid})[0];
-        _morphology = _morphologyCache.getOrCreate(uri.getPath(), uri);
+        auto name = circuit.getMorphologyNames({_gid})[0];
+        try
+        {
+            if (circuit.getAttribute<char>("recenter", {_gid})[0])
+                name += "c";
+        }
+        catch (...)
+        {}
+        _morphology = _morphologyCache.getOrCreate(
+            name, _getMorphology, circuit, _gid);
     }
     return _morphology;
 }

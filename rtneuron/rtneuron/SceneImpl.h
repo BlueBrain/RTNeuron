@@ -485,6 +485,8 @@ private:
 
     /*--- Private member functions ---*/
 
+    bool _isSONATA() const;
+
     /** Try to remove an object.
 
         @return True if the object was found and removed.
