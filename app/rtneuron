@@ -137,7 +137,7 @@ Type help(app) on the console for additional details""")
     rtneuron.start_shell()
     sys_exit()
 
-if options.blue_config == None:
+if options.config == None:
     print("""\
 RTNeuron ${PROJECT_VERSION}
 
@@ -187,15 +187,29 @@ if options.gui:
 
 # Loading the circuit data (only neurons and synapses)
 targets = []
-if options.blue_config != None:
+if options.config != None:
     # Opening simulation
-    simulation = brain.Simulation(options.blue_config)
+    try:
+        simulation = brain.Simulation(options.config)
+        circuit = simulation.open_circuit()
+        resolver = simulation
+    except RuntimeError as exc:
+        if options.config[-5:] != ".json":
+            raise exc
+        try:
+            # Try as SONATA circuit config
+            simulation = None
+            circuit = brain.Circuit(options.config)
+            resolver = circuit
+        except:
+            raise exc # Raise the original exception
+
     rtneuron.simulation = simulation
 
     # Creating the list of targets to load with their properties
     targets = []
     for key, prop in options.targets:
-        target = rtneuron.util.key_to_gids(key, simulation)
+        target = rtneuron.util.key_to_gids(key, resolver)
         if target is None:
             print("Warning: Cannot convert target key %s into a valid target" %
                   str(key))
@@ -204,7 +218,7 @@ if options.blue_config != None:
 
 # Creating the scene
 scene, display_simulation = \
-    rtneuron.create_scene(engine, simulation, targets,
+    rtneuron.create_scene(engine, circuit, targets, simulation,
                           report_name = options.report,
                           spikes = options.spikes)
 rtneuron.scene = scene

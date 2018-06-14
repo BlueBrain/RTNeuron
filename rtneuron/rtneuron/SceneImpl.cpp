@@ -83,10 +83,11 @@ using core::vec_to_vec;
 */
 namespace
 {
-Vector4f _getSomaSphere(const Neuron& neuron)
+Vector4f _getSomaSphere(const Neuron& neuron, const bool useDefaultRadius)
 {
     return Vector4f(vec_to_vec(neuron.getPosition()),
-                    neuron.getSomaRenderRadius());
+                    useDefaultRadius ? Globals::getDefaultSomaRadius()
+                                     : neuron.getSomaRenderRadius());
 }
 
 osg::BoundingSphere _calculateBoundingSphere(
@@ -559,6 +560,12 @@ void Scene::_Impl::setCircuit(const CircuitPtr& circuit)
             "with neurons or synapses added");
     _circuit = std::make_shared<core::CircuitCache>(circuit);
     /* Finding out the mesh path */
+    const auto& configPath = circuit->getSource().getPath();
+    if (configPath.size() > 4 && configPath.compare(configPath.size() - 5, 5,
+                                                    ".json") == 0)
+        /* No mesh path in SONATA circuits */
+        return;
+
     brion::BlueConfig config(circuit->getSource().getPath());
     brion::Strings runs = config.getSectionNames(brion::CONFIGSECTION_RUN);
     _sceneAttributes->circuitMeshPath =
@@ -712,6 +719,8 @@ void Scene::_Impl::pick(const Rayf& ray) const
         SYNAPSE
     } hit = NONE;
 
+    const bool isSONATA = _isSONATA();
+
     uint32_t gid = uint32_t();
     uint16_t section = uint16_t();
     const auto& selectable = _maskedNeurons.empty()
@@ -719,7 +728,7 @@ void Scene::_Impl::pick(const Rayf& ray) const
                                  : _neurons - (_neurons & _maskedNeurons);
     for (const auto& neuron : selectable)
     {
-        const float distance = ray.test(_getSomaSphere(*neuron));
+        const float distance = ray.test(_getSomaSphere(*neuron, isSONATA));
         if (distance > 0 && distance < nearest)
         {
             nearest = distance;
@@ -767,6 +776,7 @@ void Scene::_Impl::pick(const Rayf& ray) const
 
 void Scene::_Impl::pick(const Planes& planes) const
 {
+    const bool isSONATA = _isSONATA();
     std::vector<Vector4f> somas;
     somas.reserve(_neurons.size() - _maskedNeurons.size());
 
@@ -774,7 +784,7 @@ void Scene::_Impl::pick(const Planes& planes) const
                                  ? _neurons
                                  : _neurons - (_neurons & _maskedNeurons);
     for (const auto& neuron : selectable)
-        somas.push_back(_getSomaSphere(*neuron));
+        somas.push_back(_getSomaSphere(*neuron, isSONATA));
 
     std::vector<char> selected(somas.size(), true);
 #pragma omp parallel for
@@ -1291,6 +1301,17 @@ SubScenePtr Scene::_Impl::_createSubScene()
     subScene->mapDistributedObjects(_config);
 
     return subScene;
+}
+
+bool Scene::_Impl::_isSONATA() const
+{
+    if (!_circuit)
+        return false; /* The return value is irrelevant in this case */
+    const auto& source = _circuit->circuit->getSource().getPath();
+    const std::string json(".json");
+    if (source.size() < json.size())
+        return false;
+    return source.compare(source.size() - json.size(), json.size(), json) == 0;
 }
 
 bool Scene::_Impl::_removeObject(const unsigned int id)

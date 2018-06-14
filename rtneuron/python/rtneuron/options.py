@@ -446,8 +446,8 @@ class ParseProfilingOptions(argparse.Action):
 # Declares and parses the command line options
 def command_line_options(argv):
     args_parser = argparse.ArgumentParser(
-        usage="""rtneuron-app.py [-h] [-v] [--shell] [--app app_name]
-                       [-b filename] [--target name [neuron_mode [color]]]
+        usage="""rtneuron [-h] [-v] [--shell] [--app app_name]
+                       [-c filename] [--target name [neuron_mode [color]]]
                        [-n gid [neuron_mode [color]]]
                        [--neurons start_gid end_gid [neuron_mode [color]]]
                        [options...]""",
@@ -491,8 +491,13 @@ def command_line_options(argv):
     # Data loading options
     group = args_parser.add_argument_group("Data loading options")
     group.add_argument(
-        "-b", "--blue-config", type=str, default=None,
-        metavar="filename", help="Blue config file to load.")
+        "-b", "--blue-config", type=str, default=None, dest="config",
+        metavar="filename", help="Deprecated, use --config instead."
+        "config to load.")
+    group.add_argument(
+        "-c", "--config", type=str, default=None,
+        metavar="filename", help="Blue config, SONATA simulation or circuit "
+        "config to load.")
     group.add_argument(
         "--target", action=ParseTargetArguments,
         nargs='+', metavar="name [neuron_mode [color]]",

@@ -6,6 +6,7 @@
 
 - Added a new expandable menu in the circuit viewer app for additional
   settings. The only setting at the moment is the background color.
+- Added support for loading SONATA circuits (through Brion)
 
 ## Optimizations
 

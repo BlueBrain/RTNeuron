@@ -118,7 +118,7 @@ def _init_simulation(simulation_config=None, require_simulation=True):
                 pass
 
     for config in simulation_configs:
-        print("Trying to load blue config: " + config + "... ", end="")
+        print("Trying to load simulation config: " + config + "... ", end="")
         _sys.stdout.flush()
         try:
             simulation = _brain.Simulation(config)
@@ -126,7 +126,7 @@ def _init_simulation(simulation_config=None, require_simulation=True):
             return simulation
         except:
             print("failed")
-    raise RuntimeError("No valid blue config found")
+    raise RuntimeError("No valid simulation config found")
 
 def _scene_and_view(scene_or_view):
     if type(scene_or_view) == View:
@@ -173,18 +173,22 @@ def apply_spike_data(simulation_or_filename, scene_or_view):
 
     return report
 
-def create_scene(engine, simulation, neuron_targets,
+def create_scene(engine, circuit, neuron_targets, simulation=None,
                  report_name=None, spikes=None, scene_attributes=None):
-    """Create a scene object for an engine, add the given targets
-    and setup simulation.
+    """Create a scene object for an engine, assign a circuit to it, add the
+    given targets and optionally setup simulation.
     """
 
     # Creating scene
     if not scene_attributes:
         scene_attributes = default_scene_attributes
 
+    if not simulation and (report_name is not None or spikes is not None):
+        raise ValueError("A valid simulation is needed to apply simulation "
+                         "data to the scene")
+
     scene = engine.createScene(scene_attributes)
-    scene.circuit = simulation.open_circuit()
+    scene.circuit = circuit
 
     progress = ProgressBar()
     scene.progress.connect(progress.step)
@@ -297,7 +301,19 @@ def display_circuit(config=None,
     import re
 
     # Creating the global engine and simulation objects
-    simulation = _init_simulation(config)
+    try :
+        simulation = _init_simulation(config)
+        circuit = simulation.open_circuit()
+    except RuntimeError as exc:
+        simulation = None
+        if config is None or config[-5:] != ".json":
+            raise exc
+        # Try parsing config as a SONATA circuit
+        try:
+            circuit = _brain.Circuit(config)
+        except:
+            raise exc
+
     engine = _init_engine(argv=argv)
 
     translated_targets = []
@@ -330,7 +346,7 @@ def display_circuit(config=None,
 
     # Creating the scene
     scene, display_simulation = \
-        create_scene(engine, simulation, translated_targets,
+        create_scene(engine, circuit, translated_targets, simulation,
                      report_name=report, spikes=spikes)
 
     # Initializing the rendering configuration
