@@ -29,6 +29,8 @@ from subprocess import call
 import shlex
 import sys
 
+os.environ['EQ_WINDOW_IATTR_HINT_DRAWABLE'] = '-12' # offscreen
+
 try:
   import nrrd
 except ImportError:
