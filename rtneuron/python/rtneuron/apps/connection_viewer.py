@@ -54,7 +54,7 @@ def _compute_position(morphology, transform, sec_id, seg_id, seg_distance):
     # transforming the position using homogeneous coordinates
     position.resize((4))
     position[3] = 1
-    position = (transform @ position.reshape(4, 1)).reshape(4)
+    position = (transform.dot(position.reshape(4, 1))).reshape(4)
     return position[:3]
 
 def _compute_presynaptic_position(cell_pair, synapse):
