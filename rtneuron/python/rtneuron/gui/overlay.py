@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 ## Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
 ##                           Blue Brain Project and
 ##                          Universidad Politécnica de Madrid (UPM)
