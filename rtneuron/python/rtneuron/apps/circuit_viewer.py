@@ -600,6 +600,7 @@ class GUI(LoaderGUI):
                                   *args, **kwargs)
 
         qml = self._overlay.rootObject()
+        qml.changeBackground.connect(self._on_change_background)
         qml.enableSlice.connect(self._on_enable_slice)
         qml.showSlice.connect(self._on_show_slice)
         qml.sliceWidthChanged.connect(self._on_slice_width_changed)
@@ -623,6 +624,12 @@ class GUI(LoaderGUI):
         self._player.engine_player = engine.player
         self._player.view = engine.views[0]
         self._player.open_simulation_clicked.connect(self._on_open_simulation)
+
+    def _on_change_background(self, color):
+        color = [color.redF(), color.greenF(), color.blueF(), color.alphaF()]
+        view = _rtneuron.engine.views[0]
+        view.attributes.background = color
+        background = self.background().clear_color = color
 
     def _on_enable_slice(self, enable):
         background = self.background()
