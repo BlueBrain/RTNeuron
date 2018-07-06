@@ -69,7 +69,7 @@ public:
        @param gid The gid of the neuron
        @param circuit The circuit from this this neuron comes from
     */
-    Neuron(uint32_t gid, const CircuitPtr& circuit);
+    Neuron(uint32_t gid, const CircuitCachePtr& circuit);
 
     /**
        Creates a neuron object that is actually renderable.
@@ -101,7 +101,8 @@ public:
 
     /* RTNeuron internal */
 
-    const CircuitPtr& getCircuit() const { return _circuit; }
+    const CircuitCachePtr& getCircuit() const { return _circuit; }
+
     /** Load mesh and/or morphology according to the neuron representation mode
         and circuit scene attributes given.
         The given mode is taken as the mode that will be used when addToScene
@@ -246,12 +247,14 @@ private:
 
     uint32_t _gid;
 
-    CircuitPtr _circuit;
+    CircuitCachePtr _circuit;
     mutable brain::neuron::MorphologyPtr _morphology;
     mutable NeuronMeshPtr _mesh;
 
     osg::Vec3 _position;
     osg::Quat _orientation;
+    uint32_t _mtype;
+    uint32_t _etype;
 
     struct RenderData;
     std::unique_ptr<RenderData> _rd;

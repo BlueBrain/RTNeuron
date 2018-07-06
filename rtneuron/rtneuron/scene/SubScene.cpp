@@ -22,6 +22,7 @@
 #include "SubScene.h"
 
 #define EQ_IGNORE_GLEW
+#include "data/CircuitCache.h"
 #include "data/NeuronMesh.h"
 #include "data/SimulationDataMapper.h"
 #include "render/SceneStyle.h"
@@ -246,8 +247,8 @@ void _pointListFromNeurons(const Neurons& neurons,
 
             /* Loading data */
             const auto morphologies =
-                circuit.loadMorphologies(gids,
-                                         brain::Circuit::Coordinates::global);
+                circuit.circuit->loadMorphologies(
+                    gids, brain::Circuit::Coordinates::global);
             NeuronMeshes meshes;
             if (!meshPath.empty())
             {

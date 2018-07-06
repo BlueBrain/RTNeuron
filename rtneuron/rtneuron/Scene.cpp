@@ -21,11 +21,12 @@
 
 #include "detail/Configurable.h"
 
-#include "InitData.h"
 #include "SceneImpl.h"
 
 #include "Camera.h"
+#include "InitData.h"
 #include "Scene.h"
+#include "data/CircuitCache.h"
 
 #include <brain/circuit.h>
 
@@ -85,7 +86,7 @@ void Scene::setCircuit(const CircuitPtr& circuit)
 
 CircuitPtr Scene::getCircuit() const
 {
-    return _impl->getCircuit();
+    return _impl->getCircuit()->circuit;
 }
 
 Scene::ObjectPtr Scene::addNeurons(const GIDSet& gids,

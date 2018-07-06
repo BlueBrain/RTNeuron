@@ -116,7 +116,6 @@ def _init_simulation(simulation_config=None, require_simulation=True):
                 simulation_configs.append(_brain.test.circuit_config)
             except AttributeError:
                 pass
-    print(simulation_configs)
 
     for config in simulation_configs:
         print("Trying to load blue config: " + config + "... ", end="")

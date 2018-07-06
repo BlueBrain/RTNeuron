@@ -28,6 +28,7 @@
 
 #include "config/Globals.h"
 #include "config/constants.h"
+#include "data/CircuitCache.h"
 #include "data/SimulationDataMapper.h"
 #include "data/SpikeReport.h"
 #include "net/DataIStreamArchive.h"
@@ -545,7 +546,7 @@ std::vector<Scene::ObjectPtr> Scene::_Impl::getObjects()
     return objects;
 }
 
-CircuitPtr Scene::_Impl::getCircuit() const
+CircuitCachePtr Scene::_Impl::getCircuit() const
 {
     return _circuit;
 }
@@ -556,7 +557,7 @@ void Scene::_Impl::setCircuit(const CircuitPtr& circuit)
         throw std::runtime_error(
             "Cannot change the circuit of a scene "
             "with neurons or synapses added");
-    _circuit = circuit;
+    _circuit = std::make_shared<core::CircuitCache>(circuit);
     /* Finding out the mesh path */
     brion::BlueConfig config(circuit->getSource().getPath());
     brion::Strings runs = config.getSectionNames(brion::CONFIGSECTION_RUN);
