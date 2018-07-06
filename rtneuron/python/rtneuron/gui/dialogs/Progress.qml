@@ -22,9 +22,6 @@ import QtQuick 2.4
 
 Rectangle
 {
-    property alias progress: progressBar.value
-    property alias message: messageText.text
-
     opacity: 0.8
     radius: 10
     border.width: 0
@@ -36,6 +33,11 @@ Rectangle
 
     property real fontSize: 12
 
+    function step(message, progress)
+    {
+        progressBar.value = progress
+        messageText.text = message
+    }
 
     Column
     {

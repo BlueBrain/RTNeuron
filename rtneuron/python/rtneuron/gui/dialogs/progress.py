@@ -27,10 +27,15 @@ class Progress(QMLBaseDialog):
 
     done = QtCore.pyqtSignal(int)
 
+    # Internal signal used to forward the progress signal from non-GUI threads
+    # to the GUI thread
+    _step = QtCore.pyqtSignal(str, float)
+
     def __init__(self, parent):
         super(Progress, self).__init__(parent, "dialogs/Progress.qml")
 
         self._pass = 0
+        self._step.connect(self.dialog.step)
 
     def set_message(self, msg):
 
@@ -38,8 +43,7 @@ class Progress(QMLBaseDialog):
 
     def step(self, msg, size, total):
 
-        self.dialog.setProperty("progress", size/float(total))
-        self.dialog.setProperty("message", msg)
+        self._step.emit(msg, size/float(total))
 
         if size == total:
             self._pass += 1

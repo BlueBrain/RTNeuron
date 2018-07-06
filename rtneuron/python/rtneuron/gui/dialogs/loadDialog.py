@@ -67,6 +67,10 @@ class LoadDialog(QMLBaseDialog):
             self.dialog.invalidSimulation(config_file, error.args[0])
             return
 
+        gids = simulation.gids()
+        self.done.emit(simulation, gids, display_mode)
+        return
+
         targets = targets.lstrip().rstrip()
 
         if targets == "":
