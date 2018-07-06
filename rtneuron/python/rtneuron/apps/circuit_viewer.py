@@ -501,7 +501,7 @@ class TargetDisplayHandler(QtCore.QObject):
         handle = self._all_neurons.query(gids)
         neurons = handle.object
         for dye in self._dyes:
-            if not (dye.handle.object & neurons).size() == 0:
+            if len(_np.intersect1d(dye.handle.object, neurons)) != 0:
                 self._qml.showError(
                     "Requested cell set overlaps an existing set")
                 return
