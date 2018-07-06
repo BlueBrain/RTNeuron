@@ -58,7 +58,7 @@ public:
         This function is more efficient than creating and inserting the neurons
         one by one.
     */
-    Neurons(const GIDSet& gids, const CircuitPtr& circuit);
+    Neurons(const GIDSet& gids, const CircuitCachePtr& circuit);
     Neurons(Neurons&& other);
     Neurons(const Neurons& other);
 
@@ -100,13 +100,13 @@ public:
     auto cbegin() const { return _neurons.cbegin(); }
     auto cend() const { return _neurons.cend(); }
     const NeuronPtr& operator[](size_t index) const { return _neurons[index]; }
-    const CircuitPtr& getCircuit() const { return _circuit; }
+    const CircuitCachePtr& getCircuit() const { return _circuit; }
 private:
     /*--- Private member variables ---*/
 
     /* Neurons are ordered by GID */
     std::vector<NeuronPtr> _neurons;
-    CircuitPtr _circuit;
+    CircuitCachePtr _circuit;
 };
 
 GIDSet operator-(const GIDSet&, const Neurons&);

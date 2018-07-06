@@ -173,7 +173,7 @@ public:
 
     std::vector<rtneuron::Scene::ObjectPtr> getObjects();
 
-    CircuitPtr getCircuit() const;
+    core::CircuitCachePtr getCircuit() const;
 
     void setCircuit(const CircuitPtr& circuit);
 
@@ -440,7 +440,7 @@ private:
        reducing the scope of the critical regions (compared to using _lock). */
     mutable std::mutex _operationsLock;
 
-    CircuitPtr _circuit;
+    core::CircuitCachePtr _circuit;
 
     NeuronObjects _neuronObjects;
     SynapseObjects _synapseObjects;

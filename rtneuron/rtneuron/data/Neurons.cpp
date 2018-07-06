@@ -21,6 +21,7 @@
 
 #include "Neurons.h"
 
+#include "CircuitCache.h"
 #include "Neuron.h"
 #include "util/vec_to_vec.h"
 
@@ -60,11 +61,13 @@ struct Comparator
     }
 };
 }
-Neurons::Neurons(const GIDSet& gids, const CircuitPtr& circuit)
+Neurons::Neurons(const GIDSet& gids, const CircuitCachePtr& circuit)
     : _circuit(circuit)
 {
-    const auto positions = circuit->getPositions(gids);
-    const auto orientations = circuit->getRotations(gids);
+    const auto positions = circuit->circuit->getPositions(gids);
+    const auto orientations = circuit->circuit->getRotations(gids);
+    const auto mtypes = circuit->circuit->getMorphologyTypes(gids);
+    const auto etypes = circuit->circuit->getElectrophysiologyTypes(gids);
     auto gid = gids.begin();
     for (size_t i = 0; i != gids.size(); ++i, ++gid)
     {
@@ -74,6 +77,8 @@ Neurons::Neurons(const GIDSet& gids, const CircuitPtr& circuit)
         neuron->_position = vec_to_vec(positions[i]);
         const auto& q = orientations[i];
         neuron->_orientation = osg::Quat(q.x(), q.y(), q.z(), q.w());
+        neuron->_mtype = mtypes[i];
+        neuron->_etype = etypes[i];
         _neurons.push_back(neuron);
     }
 }

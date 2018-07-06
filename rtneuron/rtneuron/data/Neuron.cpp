@@ -26,6 +26,7 @@
 #include "../AttributeMap.h"
 #include "config/Globals.h"
 #include "config/constants.h"
+#include "data/CircuitCache.h"
 #include "data/SimulationDataMapper.h"
 #include "data/loaders.h"
 #include "render/Skeleton.h"
@@ -329,11 +330,13 @@ struct Neuron::RenderData
 /*
   Constructors/destructor
 */
-Neuron::Neuron(const uint32_t gid, const CircuitPtr& circuit)
+Neuron::Neuron(const uint32_t gid, const CircuitCachePtr& circuit)
     : _gid(gid)
     , _circuit(circuit)
-    , _position(vec_to_vec(_circuit->getPositions({_gid})[0]))
-    , _orientation(_toQuaternion(_circuit->getRotations({_gid})[0]))
+    , _position(vec_to_vec(_circuit->circuit->getPositions({_gid})[0]))
+    , _orientation(_toQuaternion(_circuit->circuit->getRotations({_gid})[0]))
+    , _mtype(_circuit->circuit->getMorphologyTypes({_gid})[0])
+    , _etype(_circuit->circuit->getElectrophysiologyTypes({_gid})[0])
 {
 }
 
@@ -345,6 +348,8 @@ Neuron::Neuron(const Neuron& other, const CircuitSceneAttributes& attributes,
     , _mesh(other._mesh)
     , _position(other._position)
     , _orientation(other._orientation)
+    , _mtype(other._mtype)
+    , _etype(other._etype)
     , _rd(std::make_unique<RenderData>(other, mode))
 {
     if ((mode == RepresentationMode::SOMA && !attributes.loadMorphologies) ||
@@ -385,26 +390,24 @@ const osg::Quat& Neuron::getOrientation() const
 
 std::string Neuron::getMorphologyLabel() const
 {
-    return _circuit->getMorphologyNames({_gid})[0];
+    return _circuit->circuit->getMorphologyNames({_gid})[0];
 }
 
 std::string Neuron::getMorphologyType() const
 {
-    const auto names = _circuit->getMorphologyTypeNames();
-    return names[_circuit->getMorphologyTypes({_gid})[0]];
+    return _circuit->mtypeNames[_mtype];
 }
 
 std::string Neuron::getElectrophysiologyType() const
 {
-    const auto names = _circuit->getElectrophysiologyTypeNames();
-    return names[_circuit->getElectrophysiologyTypes({_gid})[0]];
+    return _circuit->etypeNames[_etype];
 }
 
 brain::neuron::MorphologyPtr Neuron::getMorphology() const
 {
     if (!_morphology)
     {
-        const auto uri = _circuit->getMorphologyURIs({_gid})[0];
+        const auto uri = _circuit->circuit->getMorphologyURIs({_gid})[0];
         _morphology = _morphologyCache.getOrCreate(uri.getPath(), uri);
     }
     return _morphology;

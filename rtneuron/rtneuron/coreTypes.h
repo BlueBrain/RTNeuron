@@ -42,6 +42,8 @@ namespace rtneuron
 {
 namespace core
 {
+class CircuitCache;
+using CircuitCachePtr = std::shared_ptr<CircuitCache>;
 class CircuitDataStorage;
 class CircuitSceneAttributes;
 using CircuitSceneAttributesPtr = std::shared_ptr<CircuitSceneAttributes>;

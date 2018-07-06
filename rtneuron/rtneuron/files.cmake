@@ -35,6 +35,7 @@ file(GLOB_RECURSE RTNEURON_CORE_HEADERS
 set(RTNEURON_CORE_SOURCES
   ${PROJECT_BINARY_DIR}/config/paths.cpp
   config/Globals.cpp
+  data/CircuitCache.cpp
   data/Neuron.cpp
   data/Neurons.cpp
   data/NeuronMesh.cpp
