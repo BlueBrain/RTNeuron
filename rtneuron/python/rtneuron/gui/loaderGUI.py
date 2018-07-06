@@ -77,8 +77,6 @@ class LoaderGUI(BaseGUI):
             attributes.mode = _rtneuron.RepresentationMode.WHOLE_NEURON
 
         scene.addNeurons(gids, attributes)
-        view.computeHomePosition() # We need to do this because we
-                                   # have disabled the auto-home feature.
 
         # If something was typed in the loader dialog the base overlay has
         # lost the focus. Returning the focus because otherwise key presses
@@ -89,6 +87,8 @@ class LoaderGUI(BaseGUI):
 
         if pass_number == 2:
             view = _rtneuron.engine.views[0]
+            view.computeHomePosition() # We need to do this because the auto
+                                       # home position is disabled
             scene = view.scene
             scene.progress.disconnect(self.progress.step)
             self.progress.close()
