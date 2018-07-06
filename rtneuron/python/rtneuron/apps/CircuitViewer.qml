@@ -45,6 +45,9 @@ BaseOverlay
     signal addCellDye(string key, real fraction, color primary, color secondary)
     signal clearDyes()
 
+    // Render options
+    signal changeBackground(color background)
+
     function showError(message)
     {
         var dialog = Qt.createQmlObject('
@@ -73,11 +76,49 @@ BaseOverlay
         widthSpin.value = x
     }
 
+    // Options expandable
+    Expandable
+    {
+        id: options
+        anchors.bottom: overlay.bottom
+        anchors.right: parent.right
+        opacity: 0.8
+        header.opacity: 0.8
+        width: 260
+        headerText: "Options"
+        expandsDown: false
+
+        RowLayout
+        {
+            anchors.margins: 10
+            anchors.bottomMargin: 0
+            anchors.top: parent.header.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 10
+
+            Text
+            {
+                text: "Background color"
+                font.pixelSize: 12
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            ColorPicker
+            {
+                id: backgroundColor
+                onChanged: changeBackground(backgroundColor.color)
+            }
+        }
+
+        Row
+        {
+        }
+    }
+
     // Slice expandable
     Expandable
     {
         id: slices
-        anchors.bottom: overlay.bottom
+        anchors.bottom: options.top
         anchors.right: parent.right
         opacity: 0.8
         header.opacity: 0.8
