@@ -379,7 +379,7 @@ class ModelHandler(QtCore.QObject):
         try:
             attributes = _rtneuron.AttributeMap()
             attributes.color = [1, 1, 1, 1]
-            handle = self._scene.addModel(name, attributes=attributes)
+            handle = self._scene.addModel(str(name), attributes=attributes)
         except RuntimeError as e:
             self._qml.showError(str(e))
             return
