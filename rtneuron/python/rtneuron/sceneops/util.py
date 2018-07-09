@@ -63,7 +63,7 @@ def _create_colors(count, rgb_ranges):
         import scipy.spatial
     except ImportError:
         print("Scipy not found, generating random colors")
-        return _create_random_colors(count, rgb_range)
+        return _create_random_colors(count, rgb_ranges)
 
     dims = 3
     bounds = []
