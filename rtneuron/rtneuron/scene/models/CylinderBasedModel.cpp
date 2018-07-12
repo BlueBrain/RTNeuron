@@ -309,7 +309,7 @@ void CylinderBasedModel::_createSection(
     const auto t = _tangentsAndThickness->back();
     osg::Vec3 previousTangent{t[0], t[1], t[2]};
 
-    for (; index != samples.size() - 1; ++index)
+    for (; index < samples.size() - 1; ++index)
     {
         /* Getting the information for the first point of the segment. */
         const auto& sample = samples[index];
