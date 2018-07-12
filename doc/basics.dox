@@ -144,9 +144,9 @@ to understand what these objects are if you plan to use %RTNeuron only from
 the command line, but if you ever intend to use the Python shell it is worth
 getting some basic understanding.
 
-- The **application**: This is the main object that holds everything together
+- The **engine**: This is the main object that holds everything together
   and handles the Equalizer configuration. The lifetime of views, scenes and
-  the simulation player is subject to the lifetime of the application.
+  the simulation player is subject to the lifetime of the engine.
 - \b %Camera: A camera defines the parameters of the 3D to 2D projection
   (orthographic or perspective) and the position and orientation of the
   projection plane (both projections) and projection point (only perspective).
@@ -163,7 +163,7 @@ getting some basic understanding.
   Objects can be added and removed from a scene, but please note that these
   operations can be expensive
   \warning In parallel rendering configurations the changes in scenes
-  are currently not propagated from the application node (the node running
+  are currently not propagated from the master node (the node running
   the interpreter) to the clients.
 
   Some of the scene responsibilities will be moved to views in the future.
@@ -184,7 +184,7 @@ getting some basic understanding.
   - The level of detail bias.
   .
   There is a one to one mapping between %RTNeuron views and Equalizer views.
-  That means that if the application is started with an Equalizer
+  That means that if the engine is started with an Equalizer
   configuration file, a %View will be created for each view present in the
   configuration file.
 
@@ -193,7 +193,7 @@ getting some basic understanding.
 The objects described above map to objects actually exposed by the Python/C++
 library. When %RTNeuron is started with something to display and the
 \c \-\-shell option, the interpreter contains these predefined variables:
-- **app** (\pybind{RTNeuron}): The %RTNeuron application object. The
+- **engine** (\pybind{RTNeuron}): The %RTNeuron engine object. The
 simulation player API (\pybind{SimulationPlayer}) is accessible through
 an attribute called **player**.
 - **simulation** (brain.Simulation): This is the brain.Simulation representing
@@ -308,8 +308,8 @@ an \pybind{AttributeMap}. Possible attributes are documented in
 This function affects global variables of the \c rtneuron module (the
 variables from the interpreter that reference the same objects are also
 updated):
-- **app**: the \pybind{RTNeuron} object. If already existing, the current
-  configuration is exited before anything else. If needed a new application
+- **engine**: the \pybind{RTNeuron} object. If already existing, the current
+  configuration is exited before anything else. If needed a new engine
   is created.
 - **simulation**: the brain.Simulation, replaced with a new one using the blue
   config file given.
@@ -390,7 +390,7 @@ The image below shows 6 of these prisms rendered with alpha-blending enabled
 \subsection manual_scenes Creating, populating and modifying scenes manually
 
 Scenes can only be created using the method \pybind{RTNeuron.createScene} and
-before the Equalizer configuration is started by the application object. The
+before the Equalizer configuration is started by the engine object. The
 method createScene can take an optional AttributeMap to override the default
 scene parameters. Some of these options are explained in the \ref advanced as
 well at the reference manual.
@@ -1150,7 +1150,7 @@ frame and apply it to the view (no camera path is created).
 
 It is possible to record a camera path while the camera is manipulated
 interactively. For that purpose there is a helper object called
-CameraPathRecorder. This object takes an application and view in its
+CameraPathRecorder. This object takes an engine and view in its
 constructor. To start recording a camera path call \c startRecording. Each
 time a frame is issued, the current camera position will be registered in
 a camera path. Use \c stopRecording to stop registering and \c getCameraPath
@@ -1351,20 +1351,20 @@ and <code>--file-prefix</code>, the common file prefix can include an
 absolute path).
 
 Frame recording will be finished in any of the following cases, whichever
-happens first (apart from application exit):
+happens first (apart from engine exit):
 - If a camera path with more than one key frame (i.e. the begin and end
   times are different) has been provided, when the camera path end is reached.
 - If a simulation report has been provided, when the end of the simulation
 window has been reached.
 - If the command line option <code>--frame-count <em>frames</em></code> has
 been given, after *frames* frames have been rendered starting from the first
-frame in which the circuit is displayed. In this case, the application will
+frame in which the circuit is displayed. In this case, the engine will
 also exit automatically. This option is ignored when <code>--shell</code>
 is also present in the command line.
 
 \note The results of the recording are undefined if the Equalizer layout is
 changed on-the-fly. The most probable outcome is that no frames will be
-captured for the views that were not active at application start up.  For more
+captured for the views that were not active at engine start up.  For more
 information on layouts (and other advanced Equalizer configuration) refer to
 \ref display_config.
 
