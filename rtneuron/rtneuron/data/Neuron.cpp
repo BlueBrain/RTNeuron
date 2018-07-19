@@ -352,7 +352,7 @@ Neuron::Neuron(const Neuron& other, const CircuitSceneAttributes& attributes,
     , _etype(other._etype)
     , _rd(std::make_unique<RenderData>(other, mode))
 {
-    if ((mode == RepresentationMode::SOMA && !attributes.loadMorphologies) ||
+    if (mode == RepresentationMode::SOMA ||
         mode == RepresentationMode::NO_DISPLAY)
         return;
 

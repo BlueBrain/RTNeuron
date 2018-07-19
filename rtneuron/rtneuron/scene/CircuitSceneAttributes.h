@@ -40,7 +40,6 @@ public:
        @see Scene for further details about attributes.
 
        - *connect_first_order_branches* (bool)
-       - *load_morphologies* (bool)
        - *lod* (AttributeMap) :
          LOD specifications. A nested attribute map for each object type.
          - *neurons*:
@@ -73,7 +72,6 @@ public:
 
     bool meshBasedSpatialPartition;
     bool connectFirstOrderBranches;
-    bool loadMorphologies;
     bool assumeUniqueMorphologies;
 
     bool preloadSkeletons;
