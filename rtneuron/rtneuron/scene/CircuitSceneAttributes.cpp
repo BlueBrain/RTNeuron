@@ -54,7 +54,6 @@ CircuitSceneAttributes::CircuitSceneAttributes(const AttributeMap& attributes)
         useMeshes && attributes("mesh_based_partition", false);
     connectFirstOrderBranches =
         attributes("connect_first_order_branches", true);
-    loadMorphologies = attributes("load_morphologies", true);
     assumeUniqueMorphologies = attributes("unique_morphologies", false);
 
     preloadSkeletons = attributes("preload_skeletons", s_preloadSkeletonsHint);

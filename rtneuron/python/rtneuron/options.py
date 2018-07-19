@@ -673,11 +673,6 @@ def command_line_options(argv):
     group.add_argument(
         "--no-meshes", action="store_false", default=True,
         dest="use_meshes", help="Do not load meshes for neurons")
-    group.add_argument(
-        "--no-morphologies", action="store_false", default=True,
-        dest="load_morphologies", help="Do not load morphologies for " \
-        " neurons if possible (i.e. all neuron targets are to be displayed as" \
-        " somas.")
 
     # GUI options
     group = args_parser.add_argument_group("GUI options")
@@ -864,7 +859,6 @@ def create_scene_attributes(options):
         attr.lod.neurons = neurons
 
     attr.use_meshes = options.use_meshes
-    attr.load_morphologies = options.load_morphologies
     attr.unique_morphologies = options.unique_morphologies
 
     attr.primitive_options = primitive_options

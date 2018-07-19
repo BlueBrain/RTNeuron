@@ -701,9 +701,6 @@ class App(object):
         # Don't use meshes because this tool is going to be used with circuits
         # that lack them
         attributes.use_meshes = False
-        # We want the initial circuit building to assume that there are no
-        # morphologies to speed it up.
-        attributes.load_morphologies = False
 
         self._gui = display_empty_scene_with_GUI(
             GUI, attributes, *args, **kwargs)

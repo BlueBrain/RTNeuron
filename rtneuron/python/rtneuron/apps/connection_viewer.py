@@ -1166,9 +1166,6 @@ class App(object):
         # Don't use meshes because branch level culling of the meshes from the
         # default circuit provides terrible results on meshes.
         attributes.use_meshes = False
-        # We want circuit building to assume that there are no morphologies to
-        # speed it up.
-        attributes.load_morphologies = False
         attributes.inflatable_neurons = True
 
         self._gui = display_empty_scene_with_GUI(

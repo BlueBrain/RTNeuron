@@ -12,6 +12,11 @@
 - Performance improvements when loading circuits in soma only mode with no
   morphologies.
 
+## CLI Changes
+
+- --no-morphologies options removed in favour of always avoid loading
+  morphologies is not needed.
+
 ## Bug fixes
 
 - When loading large circuits, the progress indicator in the loader GUI seemed
