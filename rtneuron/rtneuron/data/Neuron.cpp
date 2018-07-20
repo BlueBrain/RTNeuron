@@ -335,9 +335,17 @@ Neuron::Neuron(const uint32_t gid, const CircuitCachePtr& circuit)
     , _circuit(circuit)
     , _position(vec_to_vec(_circuit->circuit->getPositions({_gid})[0]))
     , _orientation(_toQuaternion(_circuit->circuit->getRotations({_gid})[0]))
-    , _mtype(_circuit->circuit->getMorphologyTypes({_gid})[0])
-    , _etype(_circuit->circuit->getElectrophysiologyTypes({_gid})[0])
 {
+    try
+    {
+        _mtype = _circuit->circuit->getMorphologyTypes({_gid})[0];
+        _etype = _circuit->circuit->getElectrophysiologyTypes({_gid})[0];
+    }
+    catch (...)
+    {
+        /* mtype and etype information is not available. Leaving members
+           to their default values. */
+    }
 }
 
 Neuron::Neuron(const Neuron& other, const CircuitSceneAttributes& attributes,
@@ -395,11 +403,15 @@ std::string Neuron::getMorphologyLabel() const
 
 std::string Neuron::getMorphologyType() const
 {
+    if (_mtype >= _circuit->mtypeNames.size())
+        return "unknown";
     return _circuit->mtypeNames[_mtype];
 }
 
 std::string Neuron::getElectrophysiologyType() const
 {
+    if (_etype >= _circuit->etypeNames.size())
+        return "unknown";
     return _circuit->etypeNames[_etype];
 }
 

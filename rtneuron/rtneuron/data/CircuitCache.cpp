@@ -29,11 +29,27 @@ namespace rtneuron
 {
 namespace core
 {
+namespace
+{
+
+Strings _getNames(const brain::Circuit& circuit,
+                  brain::Strings (brain::Circuit::*names)() const)
+{
+    try
+    {
+        return (circuit.*names)();
+    }
+    catch (...)
+    {
+        return Strings();
+    }
+}
+}
 
 CircuitCache::CircuitCache(const CircuitPtr& circuit_)
     : circuit(circuit_)
-    , mtypeNames(circuit->getMorphologyTypeNames())
-    , etypeNames(circuit->getElectrophysiologyTypeNames())
+    , mtypeNames(_getNames(*circuit, &brain::Circuit::getMorphologyTypeNames))
+    , etypeNames(_getNames(*circuit, &brain::Circuit::getMorphologyTypeNames))
 {
 }
 

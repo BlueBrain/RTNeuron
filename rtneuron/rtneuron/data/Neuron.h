@@ -253,8 +253,8 @@ private:
 
     osg::Vec3 _position;
     osg::Quat _orientation;
-    uint32_t _mtype;
-    uint32_t _etype;
+    uint32_t _mtype = 0xFFFFFFFF;
+    uint32_t _etype = 0xFFFFFFFF;
 
     struct RenderData;
     std::unique_ptr<RenderData> _rd;
