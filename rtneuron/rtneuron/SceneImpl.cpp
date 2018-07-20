@@ -563,8 +563,12 @@ void Scene::_Impl::setCircuit(const CircuitPtr& circuit)
     const auto& configPath = circuit->getSource().getPath();
     if (configPath.size() > 4 && configPath.compare(configPath.size() - 5, 5,
                                                     ".json") == 0)
+    {
         /* No mesh path in SONATA circuits */
+        if (!_sceneAttributes->generateMeshes)
+            _sceneAttributes->removeMeshLODs();
         return;
+    }
 
     brion::BlueConfig config(circuit->getSource().getPath());
     brion::Strings runs = config.getSectionNames(brion::CONFIGSECTION_RUN);

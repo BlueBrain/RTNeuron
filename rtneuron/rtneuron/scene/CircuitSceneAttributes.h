@@ -94,6 +94,8 @@ public:
 
     /*--- Public member functions ---*/
 
+    void removeMeshLODs();
+
     bool areMeshesRequired() const;
 
     const std::string& getMeshPath() const;
