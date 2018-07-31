@@ -21,7 +21,7 @@ We start dispaying the circuit for a full column in soma only mode.
     attributes = rtneuron.AttributeMap()
     attributes.mode = rtneuron.RepresentationMode.SOMA
     # Displaying the circuit
-    rtneuron.display_circuit(brain.test.circuit_config, ('Column', attributes))
+    rtneuron.display_circuit(brain.test.circuit_config, ('MiniColumn_[0-9]', attributes))
     
     view = rtneuron.engine.views[0]
     view.attributes.background = [1, 1, 1, 1]

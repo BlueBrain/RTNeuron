@@ -318,7 +318,7 @@ def display_circuit(config=None,
         try:
             t = util.key_to_gids(key, simulation)
         except Exception as e:
-            print("Warning: " + e.msg)
+            print("Warning: " + str(e))
         else:
             translated_targets.append((t, attributes))
 

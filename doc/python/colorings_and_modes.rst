@@ -82,7 +82,7 @@ In this case we are going to change the color of each layer.
 
     layer_ids =[]
     for i in range(1, 7):
-        layer_ids.append(simulation.gids('Layer%d' % i)))
+        layer_ids.append(simulation.gids('Layer%d' % i))
 
 
     layers = [all_neurons.query(ids) for ids in layer_ids]
