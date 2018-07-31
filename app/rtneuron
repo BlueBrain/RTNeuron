@@ -1,5 +1,5 @@
 #!/usr/bin/env python${USE_PYTHON_VERSION}
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 ##
 ## Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
 ##                           Blue Brain Project and
@@ -152,9 +152,9 @@ If you are new to RTNeuron, please read the following:
   Typical target names are Column, MiniColumn_0, Layer5, Excitatory...
   You can call display_circuit with no parameters to load a default circuit
   and target.
-- The camera is manipulated with the mouse (https://developer.humanbrainproject.eu/docs/projects/RTNeuron/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/basics.html#camera_tackball_manipulator))
+- The camera is manipulated with the mouse (https://bluebrain.github.io/RTNeuron-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/basics.html#camera_tackball_manipulator))
 
-Please read the user guide for more information: https://developer.humanbrainproject.eu/docs/projects/RTNeuron/${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/index.html
+Please read the user guide for more information: https://bluebrain.github.io/RTNeuron-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
 """)
 
     rtneuron.start_shell()
