@@ -122,7 +122,7 @@ also needed for smooth shading and artifact-free transparent tubelets.
 <span>)</span></span></a></span>\endhtmlonly. Two different shading methods
 are provided. The default one shades each tubelet independently. The second
 one interpolates the surface normals to smooth the boundary between segments;
-this shading style is enabled setting <code>smooth_tublets</code> to true in the
+this shading style is enabled setting \c smooth_tublets to true in the
 AttributeMap passed to \link bbp::rtneuron::RTNeuron::createScene
 RTNeuron.createScene\endlink. Driver based antialiasing does not work in this
 representation due to the raycasting implementation.
@@ -177,9 +177,9 @@ the command line options and provides it to the scene construction. Section
 \ref default_lods provide details about it.
 
 \note Automatic scenes are those created by RTNeuron when using
-<code>display_circuit</code> inside the shell or loading a circuit from the
-command line with the options <code>-b</code>, <code>--target</code>,
-<code>--neurons</code>, and <code>-n (--neuron)</code>. Manual scenes are
+\c display_circuit inside the shell or loading a circuit from the
+command line with the options \c -b, \c \-\-target, \c \-\-neurons,
+and \c -n (\c \-\-neuron). Manual scenes are
 those created using \link bbp::rtneuron::RTNeuron::createScene
 RTNeuron.createScene\endlink and assigning the \link bbp::rtneuron::Scene Scene
 \endlink manually to a \link bbp::rtneuron::View View\endlink.
@@ -201,19 +201,19 @@ are also numbers between 0 and 1:
   \endcode
 
 \paragraph avoiding_meshes Avoiding meshes
-To avoid loading meshes, use <code>--no-meshes</code> for automatic scenes
-or set <code>use_meshes</code> to false in the attribute map passed to
-\link bbp::rtneuron::RTNeuron::createScene RTNeuron.createScene\endlink.
-If meshes are not loaded, the detailed soma model is neither available,
-and tubelet and pseudo-cylinder first order branches always start from the
+To avoid loading meshes, use \c \-\-no-meshes for automatic scenes or set
+\c use_meshes to false in the attribute map passed to
+\link bbp::rtneuron::RTNeuron::createScene RTNeuron.createScene\endlink.  If
+meshes are not loaded, the detailed soma model is neither available, and
+tubelet and pseudo-cylinder first order branches always start from the
 spherical soma.
 
 \paragraph enabling_tubelets Enabling tubelets
 
-Tubelets can be enabled with the command line option <code>--use-tubelets.</code>
+Tubelets can be enabled with the command line option \c \-\-use-tubelets.
 If provided, the automatic level of detail configuration will replace
 all references to high detail pseudo-cylinders with tubelets. This option
-has no effect if <code>--no-lod</code> or <code>--clod</code> are given.
+has no effect if \c \-\-no-lod or \c \-\-clod are given.
 
 \paragraph clod Continuous level of detail
 
@@ -228,16 +228,16 @@ This is an experimental feature and its performance advantage has not been
 evaluated yet, however it provides a convenient way of rendering circuits
 without meshes having an acceptable result for close ups.
 
-To enable CLOD for automatic scenes pass <code>--clod</code> in the command
-line. For manual scenes set the attribute <code>clod</code> to true in the
-attribute map <code>neurons</code> which describes the LOD specification.
+To enable CLOD for automatic scenes pass \c \-\-clod in the command
+line. For manual scenes set the attribute \c clod to true in the
+attribute map \c neurons which describes the LOD specification.
 
 \paragraph default_lods Default LOD specifications
 
 The default LOD specifications for automatic scenes are equivalent to the
 following ones:
 
-If meshes are loaded and <code>--clod</code> is not used:
+If meshes are loaded and \c \-\-clod is not used:
   \code
   # Default LOD specification
   mesh                  0.5 1.0
@@ -246,22 +246,22 @@ If meshes are loaded and <code>--clod</code> is not used:
   low_detail_cylinders  0.0 0.3
   spherical_soma        0.0 0.3
   \endcode
-where <code>tubelets</code> is used instead of
-<code>high_detail_cylinders</code> if the option <code>--use-tubelets</code> is
+where \c tubelets is used instead of
+\c high_detail_cylinders if the option \c \-\-use-tubelets is
 used.
 
-If <code>--no-meshes</code> is given in the command line:
+If \c \-\-no-meshes is given in the command line:
   \code
   # LOD specification if --no-meshes is used
   low_detail_cylinders 0.0 0.3
   spherical_soma 0.0 1
   high_detail_cylinders 0.3 1
   \endcode
-where <code>tubelets</code> is used instead of
-<code>high_detail_cylinders</code> if the option <code>--use-tubelets</code> is
+where \c tubelets is used instead of
+\c high_detail_cylinders if the option \c \-\-use-tubelets is
 used.
 
-If <code>--clod</code> is given in the command line, the specification is
+If \c \-\-clod is given in the command line, the specification is
 the following regardless of :
   \code
   # LOD specification if --clod is used
@@ -269,12 +269,12 @@ the following regardless of :
   tubelets 0 1
   detailed_soma 0 1
   \endcode
-where <code>detailed_soma</code> is replaced by <code>spherical_soma</code> if
-<code>--no-meshes</code> is also provided.
+where \c detailed_soma is replaced by \c spherical_soma if \c \-\-no-meshes is
+also provided.
 
 \paragraph disabling_lods Disabling LODs
 
-If the option <code>--no-lod</code> is passed in the command line, not LODs are
+If the option \c \-\-no-lod is passed in the command line, not LODs are
 used at all, and all targets to be displayed in detailed representation mode
 will be rendered using the detailed meshes. This option has the highest
 prevalence above all the others.
@@ -284,8 +284,8 @@ prevalence above all the others.
 When using the \a soma \a only representation mode, morphologies will still be
 loaded to compute an appropriate sphere radius for each neuron. It is possible
 to not load morphologies and assign soma radii heuristically instead. In order
-to do so, use the command line option <code>--no-morphologies</code> for
-automatic scenes, or set <code>load_morphologies</code> to false in the
+to do so, use the command line option \c \-\-no-morphologies for
+automatic scenes, or set \c load_morphologies to false in the
 attribute map passed to \link bbp::rtneuron::RTNeuron::createScene RTNeuron.createScene\endlink.
 The soma radii are assigned based on the morphology types as indicated in the
 following table (all radii in microns):
@@ -322,8 +322,8 @@ following table (all radii in microns):
 
 For unknown morphology types, a default soma radius of 9 microns is used.
 This value can be changed for automatic scenes using the command line
-option <code>--soma-radius \a number</code>. From the shell, this value
-can only be changed setting the attribute <code>soma_radius</code> on the
+option <code>\-\-soma-radius \a number</code>. From the shell, this value
+can only be changed setting the attribute \c soma_radius on the
 attribute map passed to the application object (\link
 bbp::rtneuron::RTNeuron RTNeuron\endlink) constructor.
 
@@ -332,7 +332,7 @@ automatic scenes, but if you instantiate the application object (\link
 bbp::rtneuron::RTNeuron RTNeuron\endlink) manually, you can provide your own
 one in the AttributeMap passed to the constructor. The table is also an
 AttributeMap and must be assigned to an attribute named
-<code>soma_radii</code>. The radii attribute map contains morphological type, radius pairs.
+\c soma_radii. The radii attribute map contains morphological type, radius pairs.
 
 Currently, neither the radii table, nor the unknown type radius can be changed
 after creating the application object.
@@ -359,7 +359,7 @@ below an example of rendering which can be obtained this way:
 \subsubsection runtime_lods Changing levels of detail.
 
 At runtime the LOD bias can be adjusted in a per view basis. This parameter
-is a View attribute called <code>lod_bias</code> and accessed from
+is a View attribute called \c lod_bias and accessed from
 \link bbp::rtneuron::View::getAttributes View.attributes\endlink.
 
 The LOD bias is a value in the range [0, 1] which is transformed internally in
@@ -377,18 +377,18 @@ By default, CUDA-based culling is used (the distributed binary requires CUDA
 to be available), in this mode the GPU is used to decide which parts of the
 neurons are visible.
 
-CUDA-based culling can be disabled with \c --no-cuda and neurons will be culled
+CUDA-based culling can be disabled with \c \-\-no-cuda and neurons will be culled
 as a whole, using an axis-aligned bounding-box. Reasons for doing this are
 that either your system does not support CUDA (you will still need to install
 the CUDA runtime) or that the algorithm is working unreliably (this culling
 mode uses GPU memory).
 
 Another culling option is using an octree to decide which portions are
-visible. This algorithm is enabled with \c --no-cuda and \c --use-octree and
+visible. This algorithm is enabled with \c \-\-no-cuda and \c \-\-use-octree and
 consist of creating an octree that stores the same bounding volumes used for
 the CUDA algorithm, so basically it replaces the brute force GPU computation
 by a CPU computation based on a spatial partition. The maximum level of
-subdivision of the octree can be configured with \c --octree-depth.
+subdivision of the octree can be configured with \c \-\-octree-depth.
 
 CUDA culling and octrees can be combined, but no benefits have been observed
 by doing it.
@@ -402,7 +402,7 @@ REVIEW
 
 \subsection transparency_modes Transparent rendering
 
-Transparent rendering is enabled with \c --alpha-blending. In this rendering
+Transparent rendering is enabled with \c \-\-alpha-blending. In this rendering
 mode fragments are sorted and composited using the over operator. When
 simulation display is enabled, the alpha channel from the neuron models is
 combined with the alpha channel from the simulation color map.
@@ -415,7 +415,7 @@ and both are correct in the sense that all fragments are considered.
 The first one is multi-layer dual-depth peeling, it is the slower of the
 two, but it works with OpenGL 2. This algorithm splits the scene in slices
 depending on the depth of each pixel, the number of slices can be configured
-with \c --slices. In general the more slices the fewer passes, however more
+with \c \-\-slices. In general the more slices the fewer passes, however more
 memory will be used and the rendering complexity will also increase slightly,
 thus, for each particular case there is a sweet spot. In the distributed
 package (which uses OpenGL 2) the default value is 4 slices and that performs
@@ -426,7 +426,7 @@ a linked list for each pixel and then sorts and composites the lists.
 This algorithm provides the best performance, but it requires a
 custom version of OpenSceneGraph with OpenGL 3 support.
 
-When \c --alpha-blending is given, the default algorithm that will be used
+When \c \-\-alpha-blending is given, the default algorithm that will be used
 is multi-layer dual-depth peeling. To choose an algorithm in particular add
 the algorithm name after the option as a parameter. The valid names are
 \c multilayer_depth_peeling and \c fragment_linked_list.
