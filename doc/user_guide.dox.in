@@ -110,7 +110,7 @@ By default, \c vizsh allocates resources in the Lugano vizcluster, you can use
 the -l option to allocate nodes in the Geneva cluster, but be aware that
 \c vizsh doesn't interact correctly with SLURM to start the X server in all the
 nodes in the Geneva cluster. The solution is to use salloc and srun to launch
-a process such as \c hw_sd with \c --startx. An example for 2 nodes follows:
+a process such as \c hw_sd with \c \-\-startx. An example for 2 nodes follows:
 \verbatim
 bbplxviz1$ salloc -N 2 --gres=gpu:3 srun --gres=gpu:3 --startx /path/to/hw_sd
 \endverbatim
@@ -143,9 +143,9 @@ The same result can be obtained using just command line parameters:
 $ rtneuron -b /path/to/blue/config --target target_name
 \endverbatim
 If you want to play with a scene loaded from the command line add the option
-\c --shell and the IPython shell will be started after the scene is rendered.
+\c \-\-shell and the IPython shell will be started after the scene is rendered.
 
-You can also use the command line option \c --demo to load a default circuit
+You can also use the command line option \c \-\-demo to load a default circuit
 and setup RTNeuron to show some of its features. Once the circuit is loaded
 try clicking on neuron somas, the display mode of the clicked neuron will
 change to show the synaptic pathways for anterograde projections, and then
