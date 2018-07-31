@@ -7,7 +7,8 @@ This notebook shows how to add objects to a scene which are not part of a
 circuit, in particular, polygonal meshes created by the user with Python code
 and models from files.
 
-Let's start showing how to load a model from a file into the scene.
+Let's start showing how to load a model from a file into the scene using
+|addModel|.
 
 .. code:: python
 
@@ -109,9 +110,9 @@ that adding a model multiple times to a scene creates a full instance of
 the model each time. Instancing of a single model multiple times is not
 supported by the API and there are no plans to do so at the moment.
 
-The function to add a polygonal mesh to the scene is addMesh. This
+The function to add a polygonal mesh to the scene is |addGeometry|. This
 function cannot take an extra parameter with a transformation. With
-addMesh it's possible to add triangular meshes and lines sets.
+addGeometry it's possible to add triangular meshes and lines sets.
 
 .. code:: python
 
@@ -128,7 +129,7 @@ addMesh it's possible to add triangular meshes and lines sets.
     # With flat shading, the model has per facet normals which are computed on-the-fly during rendering.
     attributes = rtneuron.AttributeMap()
     attributes.flat = True
-    scene.addMesh(vertices, indices, colors=colors, attributes=attributes)
+    scene.addGeometry(vertices, indices, colors=colors, attributes=attributes)
 
     # Now we will add another mesh to paint the edges of the model.
     indices = [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [2, 3], [3, 4], [4, 1], [1, 5], [2, 5], [3, 5], [4, 5]]
@@ -139,8 +140,8 @@ addMesh it's possible to add triangular meshes and lines sets.
     attributes = rtneuron.AttributeMap()
     attributes.line_width = 4
     import numpy
-    scene.addMesh(numpy.array(vertices), numpy.array(indices), colors=[1, 1, 1, 1], attributes=attributes)
-    # As can be seen addMesh also accepts numpy arrays.
+    scene.addGeometry(numpy.array(vertices), numpy.array(indices), colors=[1, 1, 1, 1], attributes=attributes)
+    # As can be seen addGeometry also accepts numpy arrays.
 
     view.camera.setView([-313, 37, 180], ([-0.0943, -0.995, -0.0327], 59))
     rtneuron.snapshot_to_notebook(view)
@@ -162,3 +163,5 @@ addMesh it's possible to add triangular meshes and lines sets.
 .. image:: meshes_and_models_files/output_8_0.png
 
 
+.. |addGeometry| replace:: :py:func:`addGeometry<rtneuron._rtneuron.Scene.addGeometry>`
+.. |addModel| replace:: :py:func:`addModel<rtneuron._rtneuron.Scene.addModel>`

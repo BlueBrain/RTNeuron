@@ -42,9 +42,10 @@ context and populate the scene with the given targets
     ***************************************************
 
 
-A function is provided to directly embed snapshots into a IPython
-notebook. This function takes a view as its argument. Another way of
-getting snapshot is using the |view_snapshot| function.
+The function |snapshot_to_notebook| is provided to directly embed snapshots into
+a IPython notebook. This function takes a view as its argument. Another way of
+getting snapshot is using the |view_snapshot| function, which takes as an
+argument the file path of the ouput image.
 
 .. code:: python
 
@@ -176,7 +177,7 @@ populated manually starting from an empty scene. The functions to do so
 are:
  * |addNeurons|
  * |addAfferentSynapses| and |addEfferentSynapses|
- * |addModel| and |addMesh|
+ * |addModel| and |addGeometry|
 
 These methods handle to the scene object created. The handle can be used
 to modify some properties of the scene objects or to remove then from
@@ -207,7 +208,7 @@ the scene.
     center = positions.mean(axis=0)
     bottom = [center[0], -500, center[2]]
     top = [center[0], 2500, center[2]]
-    scene.addMesh([top, bottom], [[0, 1]], attributes = rtneuron.AttributeMap({'mode': 'lines', 'line_width': 2}))
+    scene.addGeometry([top, bottom], [[0, 1]], attributes = rtneuron.AttributeMap({'mode': 'lines', 'line_width': 2}))
     
     # A helper function can be used to add a hexagonal prism to the scene.
     rtneuron.add_hexagonal_prism(scene, [center[0], 0, center[2]], 2000, 270)
@@ -303,10 +304,11 @@ function. This works for example for the ``View`` object.
 
 
 .. |display_circuit| replace:: :py:func:`display_circuit<rtneuron.display_circuit>`
+.. |snapshot_to_notebook| replace:: :py:func:`snapshot_to_notebook<rtneuron.snapshot_to_notebook>`
 .. |view_snapshot| replace:: :py:func:`snapshot<rtneuron._rtneuron.View.snapshot>`
 .. |RTNeuron| replace:: :py:class:`RTNeuron<rtneuron._rtneuron.RTNeuron>`
 .. |addNeurons| replace:: :py:func:`addNeurons<rtneuron._rtneuron.Scene.addNeurons>`
 .. |addAfferentSynapses| replace:: :py:func:`addAfferentSynapses<rtneuron._rtneuron.Scene.addAfferentSynapses>`
 .. |addEfferentSynapses| replace:: :py:func:`addEfferentSynapses<rtneuron._rtneuron.Scene.addEfferentSynapses>`
 .. |addModel| replace:: :py:func:`addModel<rtneuron._rtneuron.Scene.addModel>`
-.. |addMesh| replace:: :py:func:`addMesh<rtneuron._rtneuron.Scene.addMesh>`
+.. |addGeometry| replace:: :py:func:`addGeometry<rtneuron._rtneuron.Scene.addGeometry>`
