@@ -9,12 +9,17 @@ The main utility of RTNeuron is twofold: the interactive visual inspection of
 structural and functional features of the cortical column model and the
 generation of high quality movies and images for presentation and publications.
 This guide will get you acquaintanced with all the features provided by
-RTNeuront and how to fully exploit them for both purposes.
+RTNeuron and how to fully exploit them for both purposes.
 
-RTNeuron provides a C++ library with the rendering backend, a Python wrapping
-and an Python application called *rtneuron*.  This documentation mostly
-covers the use of the command line application and the Python wrapping. To use
-RTNeuron as a C++ library, developers are referred to the C++ class reference.
+RTNeuron provides a C++ library with an OpenGL-based rendering backend, a
+Python wrapping and an Python application called *rtneuron*.  This
+documentation mostly covers the use of the command line application and the
+Python wrapping. To use RTNeuron as a C++ library, developers are referred to
+the C++ class reference.
+
+RTNeuron is only supported in GNU/Linux systems. However, it should also be
+possible to build it in Windows systems. For OS/X it may be quite challenging
+and require changes in OpenGL related code to get it working.
 
 ## Documentation
 
@@ -41,4 +46,3 @@ ETH Board funding to the Blue Brain Project and Cajal Blue Brain (funded by
 the Spanish Ministerio de Ciencia, Innovación y Universidades). Partial
 funding has been furthermore provided by the European Union’s Horizon 2020
 research and innovation programme under grant agreement no.720270. (HBP SGA1).
-

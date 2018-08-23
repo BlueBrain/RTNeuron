@@ -35,14 +35,8 @@ configure_file(${PROJECT_SOURCE_DIR}/doc/doxygen.cfg.in
                ${PROJECT_BINARY_DIR}/doc/doxygen.cfg)
 set(DOXYGEN_CONFIG_FILE ${PROJECT_BINARY_DIR}/doc/doxygen.cfg)
 
-configure_file(${PROJECT_SOURCE_DIR}/doc/user_guide.dox.in
-               ${PROJECT_BINARY_DIR}/doc/user_guide.dox)
 configure_file(${PROJECT_SOURCE_DIR}/doc/reference_manual.dox.in
                ${PROJECT_BINARY_DIR}/doc/reference_manual.dox)
-configure_file(${PROJECT_SOURCE_DIR}/doc/main_page.dox.in
-               ${PROJECT_BINARY_DIR}/doc/main_page.dox)
-configure_file(${PROJECT_SOURCE_DIR}/doc/compilation.dox.in
-               ${PROJECT_BINARY_DIR}/doc/compilation.dox)
 
 macro(create_tables OUTPUT_TARGETS)
   foreach(INPUT_FILE ${ARGN})

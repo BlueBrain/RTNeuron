@@ -45,7 +45,7 @@ except:
     _has_rest_support = False
 
 DEFAULT_BLUECONFIG="/nfs4/bbp.epfl.ch/visualization/Circuits/KaustCircuit/BlueConfig"
-DEFAULT_APP='projections'
+DEFAULT_APP='circuit_viewer'
 
 class LODtype:
     NO_LOD, USE_CLOD, USE_TUBELETS, USE_CYLINDERS = range(4)

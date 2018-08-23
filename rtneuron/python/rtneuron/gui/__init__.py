@@ -23,7 +23,7 @@ import sys
 
 from PyQt5 import QtWidgets, QtCore
 
-from .gui import BaseGUI, GUI
+from .gui import BaseGUI
 from .loaderGUI import LoaderGUI
 from .selectionHandler import SelectionHandler
 from . import enums as _enums

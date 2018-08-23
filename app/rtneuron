@@ -165,13 +165,14 @@ theQApp = None
 
 if options.gui:
     from rtneuron import gui
+    from rtneuron.gui.gui import GUI
     qt_app = gui.create_qt_app()
     if not qt_app:
         options.gui = False
         print("Unsupported platform/setup for GUI, disabling it")
 
     try:
-        gui_widget = gui.GUI()
+        gui_widget = GUI()
     except Exception as e:
         print("Failed to setup GUI")
         print(e)
