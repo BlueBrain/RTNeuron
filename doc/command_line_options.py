@@ -32,14 +32,11 @@ Displays the command line options help.
 Launch the GUI. This option is not compatible with --eq-config. It can be
 combined with --shell.
 
-!!OPTION --demo [demo_name]
+!!OPTION --app [demo_name]
 Starts the demo of the given name. If no name is provided it will start the
-default demo (named projections). This demo shows a default circuit using
-somas. When a soma is clicked, the anterograde pathways of the neuron are
-shown, if the soma is clicked again, the retrograde pathways are shown.
-The shell will also be started.
+default demo (named circuit_viewer).
 
-!!OPTION --demo help
+!!OPTION --app help
 Print out the list of available demos.
 
 !!OPTION --shell
@@ -52,8 +49,8 @@ Displays version information.
 ################################################################################
 !!GROUP Data loading options
 
-!!OPTION -b --blue-config <em>filename</em>
-The simulation configuration file to use.
+!!OPTION -c --config <em>filename</em>
+The circuit or simulation configuration file to use.
 
 #!!OPTION --models
 #A comma separated list of paths to files loadable by OSG to include an

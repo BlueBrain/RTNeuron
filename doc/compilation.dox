@@ -1,0 +1,383 @@
+/* Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+ *                           Blue Brain Project and
+ *                          Universidad Politécnica de Madrid (UPM)
+ *                          Juan Hernando <juan.hernando@epfl.ch>
+ *
+ * This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/**
+
+\htmlonly
+
+<style type="text/css" media="screen, projection">
+pre {
+    padding: 0.5em;
+    border: 1px dashed #2f6fab;
+    color: black;
+    background-color: #f9f9f9;
+    line-height: 1em;
+}
+
+#note {
+    position: relative;
+}
+#note span {
+    display: none;
+}
+#note a span {
+    display: none;
+    color: #FFFFFF;
+}
+#note a span span {
+    display: none;
+}
+#note a:hover span span {
+    display: none;
+}
+#note a:hover span {
+    display: block;
+    position: absolute;
+    width: 20em;
+    background-color: #aaa;
+    left: 1em;
+    top: -5px;
+    color: #FFFFFF;
+    padding: 5px; }
+</style>
+\endhtmlonly
+
+\page compilation Building RTNeuron
+
+The only officially supported operating systems is Ubuntu and its derivates, for
+which this guide is written. For any other Linux distribution the instructions
+are almost the same, the biggest difference being the installation of
+dependencies.Windows and OS/X are not officially supported.
+
+\section rtneuron_dependencies Dependencies
+
+RTNeuron dependencies are split into two groups, those that need to be
+preinstalled by the user and those that can be built by RTNeuron's compilation
+scripts. Only dependencies that require manual installation are listed, for all
+the others the instructions will rely on the automatic dependency building.
+Dependencies for experimental or unmaintained features are not considered in
+this guide.
+
+For convenience the complete apt-get command to use in Ubuntu with Python3 to
+install the required and some recommended optional dependencies is the
+following:
+
+\verbatim
+sudo apt-get install cmake g++ git bison flex libboost-dev libboost-filesystem-dev libboost-iostreams-dev \
+    libboost-regex-dev libboost-program-options-dev libboost-python-dev libboost-system-dev libboost-serialization-dev \
+    libboost-test-dev libboost-thread-dev libhdf5-serial-dev libopenscenegraph-dev mesa-common-dev qtdeclarative5-dev \
+    qml-module-qtquick-controls qml-module-qtquick-layouts qml-module-qtquick-dialogs libpython3-dev python3-numpy \
+    python3-decorator python3-opengl doxygen python3-sphinx python3-lxml ipython3
+\endverbatim
+
+If your system is Ubuntu (or compatible) and you are not interested in further
+details you can jump down to building at this point.
+
+The table below details all the build and runtime dependencies. For Python
+related packages, only the package names for version 3 are provided. For
+reference, the names of the rpm packages for Centos with the EPEL repository
+extensions are also provided (in this case all Python packages are 2.7).
+
+\htmlonly
+<table id="depends_table" style="width: 80%;">
+<col style="width: 12%; valign: top;"/>
+<col style="width: 12%; valign: top;"/>
+<col style="width: 12%; valign: top;"/>
+<col style="width: 20%; valign: top;"/>
+<col style="width: 20%; valign: top;"/>
+<col style="width: 24%; valign: top;"/>
+<tr>
+<th>Dependency</th>
+<th>Version</th>
+<th>Type</th>
+<th>Ubuntu package</th>
+<th>Redhat package</th>
+<th>Notes</th>
+</tr>
+
+<tr class="even">
+<td>CMake</td>
+<td>>=3.1</td>
+<td>build tool</td>
+<td>cmake</td>
+<td>cmake3 (EPEL)</td>
+<td>See </td>
+</tr>
+
+<tr>
+<td>g++</td>
+<td>>=4.8.5</td>
+<td>build tool</td>
+<td>g++</td>
+<td>gcc-g++</td>
+<td>clang may also be used</td>
+</tr>
+
+<tr>
+<td>bison</td>
+<td>>=3.0</td>
+<td>build tool</td>
+<td>bison</td>
+<td>bison</td>
+<td></td>
+</tr>
+
+<tr>
+<td>flex</td>
+<td>>=3.0</td>
+<td>build tool</td>
+<td>flex</td>
+<td>flex</td>
+<td></td>
+</tr>
+
+<tr class="even">
+<td>Git</td>
+<td>>=2.7.4</td>
+<td>build tool</td>
+<td>git</td>
+<td>git</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Boost, with:<ul style="margin: 0px">
+  <li>date_time</li>
+  <li>filesystem</li>
+  <li>iostreams</li>
+  <li>regex</li>
+  <li>python</li>
+  <li>program_options</li>
+  <li>system</li>
+  <li>serialization</li>
+  <li>thread</li>
+  <li>unit_test_framework</li>
+</ul></td>
+<td>>=1.58</td>
+<td>C++ library</td>
+<td>libboost&#8209;dev libboost&#8209;filesystem&#8209;dev
+  libboost&#8209;iostreams&#8209;dev libboost&#8209;regex&#8209;dev
+  libboost&#8209;python&#8209;dev libboost&#8209;program&#8209;options&#8209;dev
+  libboost&#8209;system&#8209;dev libboost&#8209;serialization&#8209;dev
+  libboost&#8209;test&#8209;dev libboost&#8209;thread&#8209;dev</td>
+<td>boost-devel</td>
+<td></td>
+</tr>
+
+<tr class="even">
+<td>HDF5</td>
+<td>>=1.8.10 </td>
+<td>C library</td>
+<td>libhdf5-serial-dev</td>
+<td>hdf5-devel (EPEL)</td>
+<td></td>
+</tr>
+
+<tr>
+<td>OpenGL</td>
+<td>>=2.0</td>
+<td>C library</td>
+<td>mesa&#8209;common&#8209;dev or nvidia&#8209;<em>driver_version</em>&#8209;dev</td>
+<td>mesa-libGL-devel</td>
+<td>Depends on the OpenGL driver used</td>
+</tr>
+
+<tr class="even">
+<td>Qt with QML and QtQuick</td>
+<td>>=5.4, >2 for QtQuick</td>
+<td>C++/QML library</td>
+<td>qtdeclarative5-dev qml&#8209;module&#8209;qtquick&#8209;controls
+  qml&#8209;module&#8209;qtquick&#8209;layouts
+  qml&#8209;module&#8209;qtquick&#8209;dialogs</td>
+<td>qt5-base-devel qt5-qtquickcontrols2-devel</td>
+<td></td>
+</tr>
+
+<tr>
+<td>Python</td>
+<td>2.7 or >=3.4</td>
+<td>C runtime and libraries</td>
+<td>libpython3-dev</td>
+<td>python-devel</td>
+<td></td>
+</tr>
+
+<tr class="even">
+<td>PyQt5</td>
+<td>==<em>Qt-version</em></td>
+<td>Python module</td>
+<td>python3-pyqt5.qtquick python3-pyqt5</td>
+<td><em>not available</em></td>
+<td></td>
+</tr>
+
+<tr>
+<td>PyOpenGL</td>
+<td>>=3.0 </td>
+<td>Python module</td>
+<td>python3-opengl</td>
+<td>PyOpenGL</td>
+<td>Required at runtime by Qt GUIs</td>
+</tr>
+
+<tr class="even">
+<td>Numpy</td>
+<td>>=1.11.0</td>
+<td>Python module</td>
+<td>python3-numpy</td>
+<td>numpy</td>
+<td></td>
+</tr>
+
+<td>OpenSceneGraph</td>
+<td> >=3.2, <3.5 </td>
+<td>C++ library</td>
+<td>libopenscenegraph-dev</td>
+<td><em>not available<em></td>
+<td></td>
+</tr>
+
+<tr class="even">
+<td>decorator</td>
+<td>>=4.0</td>
+<td>Python module</td>
+<td>python3-decorator</td>
+<td>python-decorator</td>
+<td></td>
+</tr>
+</table>
+\endhtmlonly
+
+The optional dependencies are:
+
+\htmlonly
+<table id="depends_table" style="width: 80%;">
+<col style="width: 12%; valign: top;"/>
+<col style="width: 12%; valign: top;"/>
+<col style="width: 12%; valign: top;"/>
+<col style="width: 20%; valign: top;"/>
+<col style="width: 20%; valign: top;"/>
+<col style="width: 24%; valign: top;"/>
+<tr>
+<th>Dependency</th>
+<th>Version</th>
+<th>Type</th>
+<th>Ubuntu package</th>
+<th>Redhat package</th>
+<th>Notes</th>
+</tr>
+
+<tr class="even">
+<td>CUDA SDK</td>
+<td>>=6</td>
+<td>C library and driver</td>
+<td>nvidia-cuda-dev</td>
+<td>cudatoolkit</td>
+<td>For faster view frustum culling</td>
+</tr>
+
+<tr>
+<td>doxygen</td>
+<td>>=1.8</td>
+<td>application</td>
+<td>doxygen</td>
+<td>doxygen</td>
+<td>For in-shell help and Python html documentation</td>
+</tr>
+
+<tr class="even">
+<td>dot</td>
+<td>>=2</td>
+<td>application</td>
+<td>graphviz</td>
+<td>graphviz</td>
+<td>For html documentation generation</td>
+</tr>
+
+<tr>
+<td>IPython</td>
+<td>>= 2.4</td>
+<td>Python module</td>
+<td>python3-ipython</td>
+<td>python-ipython</td>
+<td>Recommended for interactive console</td>
+</tr>
+
+<tr class="even">
+<td>lxml</td>
+<td>>=3.5</td>
+<td>Python module</td>
+<td>python3-lxml</td>
+<td>python-lxml</td>
+<td>For in-shell help and Python html documentation</td>
+</tr>
+
+<tr>
+<td>ninja</td>
+<td></td>
+<td>build tool</td>
+<td>ninja-build</td>
+<td>ninja-build</td>
+<td>For faster building</td>
+</tr>
+
+<tr class="even">
+<td>Sphinx</td>
+<td>==1.3.x</td>
+<td>application</td>
+<td>python3-sphinx</td>
+<td><em>version too old</em></td>
+<td>For Python documentation and in-shell help. Install with pip if in doubt about version number</td>
+</tr>
+
+</table>
+\endhtmlonly
+
+\section rtneuron_compilation Building
+
+For building from source, first make sure that all non-automatic dependencies
+are installed and then type the following commands inside a shell:
+
+\verbatim
+git clone --recursive https://github.com/BlueBrain/RTNeuron.git
+mkdir RTNeuron/build
+cd RTNeuron/build
+cmake .. -DCLONE_SUBPROJECTS=ON -DCMAKE_BUILD_TYPE=Release
+make
+\endverbatim
+
+If you have installed ninja add `-GNinja` to the cmake invokation to enjoy
+a shorter build time. Once the build finishes, the \c rtneuron application
+will be available under RTNeuron/build/bin.
+
+The configuration will try to find the all dependencies as system installed
+packages automatically. For all required dependencies not listed before, the
+configuration step will download their source code to build them if they are
+not detected by CMake.
+
+Once the build is finished you can find the main `rtneuron` application at
+RTNeuron/build/bin/rtneuron. If you want to write your own Python scripts, add
+RTNeuron/build/lib to your `PYTHONPATH` variable. Alternatively
+you can install everything to any preferred location adding
+`-DCMAKE_INSTALL_PREFIX` to the cmake invocation and then running make
+install.
+
+*/

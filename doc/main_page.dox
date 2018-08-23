@@ -23,6 +23,10 @@
 
 \mainpage Documentation
 
+\htmlonly
+<a href="https://github.com/BlueBrain/RTNeuron" style="position: relative; float: right"><img style="position: absolute; top: -15px; right: -8px; border: 0;" src="forkme.png" alt="Fork me on GitHub"></a>
+\endhtmlonly
+
 \image html cover.png
 
 Welcome to RTNeuron, the scalable real-time rendering tool for the
@@ -32,12 +36,17 @@ The main utility of RTNeuron is twofold: the interactive visual inspection of
 structural and functional features of the cortical column model and the
 generation of high quality movies and images for presentation and publications.
 This guide will get you acquaintanced with all the features provided by
-RTNeuront and how to fully exploit them for both purposes.
+RTNeuron and how to fully exploit them for both purposes.
 
-RTNeuron provides a C++ library with the rendering backend, a Python wrapping
-and an Python application called \c rtneuron.  This documentation mostly
-covers the use of the command line application and the Python wrapping. To use
-RTNeuron as a C++ library, developers are referred to the C++ class reference.
+RTNeuron provides a C++ library with an OpenGL-based rendering backend, a
+Python wrapping and an Python application called `rtneuron`. This
+documentation mostly covers the use of the command line application and the
+Python wrapping. To use RTNeuron as a C++ library, developers are referred to
+the C++ class reference.
+
+RTNeuron is only supported in GNU/Linux systems, however, it should also be
+possible to build it in Windows systems. For OS/X it may be quite challenging
+and require changes in OpenGL related code to get it working.
 
 The user documentation of RTNeuron is comprised by the following sections:
 - \subpage user_guide, concepts, basics, and command line usage.
@@ -46,9 +55,13 @@ The user documentation of RTNeuron is comprised by the following sections:
 - The <a href="python/gallery.html">The code example and image gallery</a>.
 - \subpage release_notes.
 
-There are several online resources available which may be of interest to
-users:
-- The <a href=https://github.com/BlueBrain/RTNeuron>github repository</a>.
-- The online copy of <a href=https://developer.humanbrainproject.eu/docs/projects/RTNeuron/@PROJECT_VERSION@/index.html>this documentation</a>.
+## About
+
+RTNeuron has been jointly developed by the EPFL Blue Brain Project and the
+Universidad Politécnica de Madrid. Main financial support was provided by the
+ETH Board funding to the Blue Brain Project and Cajal Blue Brain (funded by
+the Spanish Ministerio de Ciencia, Innovación y Universidades). Partial
+funding has been furthermore provided by the European Union’s Horizon 2020
+research and innovation programme under grant agreement no.720270. (HBP SGA1).
 
 */
