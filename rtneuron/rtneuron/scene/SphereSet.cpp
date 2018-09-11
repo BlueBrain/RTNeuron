@@ -210,7 +210,7 @@ public:
             /* Nobody will be able to use the subset added at the moment
                it can be accessed, but we still need the lock to ensure
                that back() returns the element just added. */
-            const auto&& lock = subsets.getWriteLock();
+            const auto lock = subsets.getWriteLock();
             subsets.push_back(subset, false);
             return &subsets.back();
         }
@@ -221,7 +221,7 @@ public:
             /* If LFVector provided a template parameter to take an
                allocator we could simply configure the allocator to call
                the SphereSubset constructor and then call expand. */
-            const auto&& lock = subsets.getWriteLock();
+            const auto lock = subsets.getWriteLock();
             if (subsets.empty())
                 subsets.push_back(SphereSubset(maxSpheresPerSubset), false);
         }
@@ -246,7 +246,7 @@ public:
             /* This subset doesn't have enough free space, we have to
                ensure that at least a new one is created and try again. */
             {
-                const auto&& lock = subsets.getWriteLock();
+                const auto lock = subsets.getWriteLock();
                 if (subsets.end() - subset == 1)
                     subsets.push_back(SphereSubset(maxSpheresPerSubset), false);
             }

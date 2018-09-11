@@ -36,7 +36,7 @@ namespace core
 {
 /* Thread-safe cache with automatic object creation when needed. */
 template <typename Object, typename Key,
-          template <typename T> typename Pointer = std::shared_ptr>
+          template <typename T> class Pointer = std::shared_ptr>
 class ObjectCache
 {
     using ObjectPtr = Pointer<Object>;
@@ -132,7 +132,7 @@ private:
 };
 
 /* Specicialization for single objects, no key */
-template <typename Object, template <typename T> typename Pointer>
+template <typename Object, template <typename T> class Pointer>
 class ObjectCache<Object, void, Pointer>
 {
     using ObjectPtr = Pointer<Object>;

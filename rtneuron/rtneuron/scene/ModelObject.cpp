@@ -24,6 +24,7 @@
 #include "util/attributeMapHelpers.h"
 
 #include <osg/MatrixTransform>
+#include <osg/Version>
 
 #include <osgDB/ReadFile>
 
@@ -43,9 +44,15 @@ public:
 #ifndef OSG_GL3_AVAILABLE
     virtual void apply(osg::Geode& geode)
     {
+#if OSG_VERSION_GREATER_OR_EQUAL(3, 3, 2)
+        for (size_t i = 0; i != geode.getNumChildren(); ++i)
+        {
+            auto* geometry = geode.getChild(i)->asGeometry();
+#else
         for (auto drawable : geode.getDrawableList())
         {
             auto* geometry = drawable->asGeometry();
+#endif
             if (geometry)
                 apply(*geometry);
         }

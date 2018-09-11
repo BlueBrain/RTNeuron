@@ -38,8 +38,6 @@
 #endif
 #include <boost/timer.hpp>
 
-#include <GL/glu.h>
-
 namespace bbp
 {
 namespace rtneuron
