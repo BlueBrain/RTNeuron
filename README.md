@@ -33,3 +33,12 @@ find new issues which have not already been reported in
 already reported problem, please update the corresponding issue with your inputs
 and outputs.
 
+## About
+
+RTNeuron has been jointly developed by the EPFL Blue Brain Project and the
+Universidad Politécnica de Madrid. Main financial support was provided by the
+ETH Board funding to the Blue Brain Project and Cajal Blue Brain (funded by
+the Spanish Ministerio de Ciencia, Innovación y Universidades). Partial
+funding has been furthermore provided by the European Union’s Horizon 2020
+research and innovation programme under grant agreement no.720270. (HBP SGA1).
+
