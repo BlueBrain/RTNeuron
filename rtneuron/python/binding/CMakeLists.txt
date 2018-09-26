@@ -27,6 +27,7 @@ include_directories(
   ${PYTHON_NUMPY_INCLUDE_DIR})
 
 set(RTNEURON_PYTHON_SOURCES
+  RawArray.cpp
   helpers.cpp
   submodules.cpp
   rtneuron_python.cpp
@@ -41,7 +42,6 @@ set(RTNEURON_PYTHON_SOURCES_WITH_DOCSTRINGS
   ColorMap.cpp
   CameraManipulators.cpp
   Pointer.cpp
-  RawArray.cpp
   RTNeuron.cpp
   Scene.cpp
   SimulationPlayer.cpp
