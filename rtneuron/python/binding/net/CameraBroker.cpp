@@ -1,7 +1,7 @@
-/* Copyright (c) 2006-2018, École Polytechnique Fédérale de Lausanne (EPFL) /
+/* Copyright (c) 2006-2018, Ecole Polytechnique Federale de Lausanne (EPFL) /
  *                           Blue Brain Project and
- *                          Universidad Politécnica de Madrid (UPM)
- *                          Jafet Villafranca <jafet.villafrancadiaz@epfl.ch>
+ *                          Universidad Politecnica de Madrid (UPM)
+ *                          Juan Hernando <juan.hernando@epfl.ch>
  *
  * This file is part of RTNeuron <https://github.com/BlueBrain/RTNeuron>
  *
