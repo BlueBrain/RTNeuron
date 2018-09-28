@@ -131,7 +131,7 @@ group.add_argument(
     "-n", "--cells-per-image", type=int, default=3,
     metavar="count", help="The number of cells per image.")
 group.add_argument(
-    "-r", "--resolution", type=int, default=0.5, metavar="pixels/um",
+    "-r", "--resolution", type=float, default=0.5, metavar="pixels/um",
     help="Image resolution, width and height will be computed depending on"
     " the slice size")
 group.add_argument(
