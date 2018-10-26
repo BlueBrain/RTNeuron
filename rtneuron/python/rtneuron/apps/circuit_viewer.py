@@ -489,7 +489,7 @@ class TargetDisplayHandler(QtCore.QObject):
         # Checking that the target is valid
         try:
             gids = _util.target_string_to_gids(str(key), _rtneuron.simulation)
-        except ValueError as e:
+        except RuntimeError as e:
             self._qml.showError(" ".join(map(str, e.args)))
             return
         # Getting the requested fraction of the target
