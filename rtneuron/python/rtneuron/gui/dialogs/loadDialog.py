@@ -22,16 +22,18 @@ import rtneuron as _rtneuron
 from .. import util as _util
 
 from .QMLBaseDialog import *
+import numpy as _np
+import brain as _brain
 
 class LoadDialog(QMLBaseDialog):
     """
     A pseudo-modal dialog that pops up a rectangle to select a circuit and
     target.
 
-    When accepted, the done signal contains the brain.Simulation, a numpy
-    array of ints with the GIDs of the target to load and the
-    rtneuron.RepresentationMode to use. The simulation object is assigned to
-    the rtneuron.simulation global variable.
+    When accepted, the done signal contains the brain.Simulation, the
+    brain.Circuit, a numpy array of ints with the GIDs of the target to load
+    and the rtneuron.RepresentationMode to use. The simulation object may be
+    None (this is the case in SONATA circuit configs).
 
     The constructor runs an event loop until the dialog is done. The done
     signal is not emitted and the dialog reamins open if the input contains
@@ -39,7 +41,7 @@ class LoadDialog(QMLBaseDialog):
     There's no cancel button on purpose because there's no need for it at the
     moment.
     """
-    done = QtCore.pyqtSignal(object, object, object)
+    done = QtCore.pyqtSignal(object, object, object, object)
 
     def __init__(self, parent, default_config=None, default_target=None):
 
@@ -63,9 +65,16 @@ class LoadDialog(QMLBaseDialog):
         try:
             simulation = _rtneuron._init_simulation(
                 self._default_config if config_file == "" else config_file)
+            circuit = simulation.open_circuit()
         except RuntimeError as error:
-            self.dialog.invalidSimulation(config_file, error.args[0])
-            return
+            # Try to open the config_file directly as a circuit instead
+            try:
+                circuit = _brain.Circuit(config_file)
+                simulation = None
+            except RuntimeError:
+                # We report the original error
+                self.dialog.invalidSimulation(config_file, error.args[0])
+                return
 
         targets = targets.lstrip().rstrip()
 
@@ -79,7 +88,7 @@ class LoadDialog(QMLBaseDialog):
                         "for the simulation")
                     return
             else:
-                gids = simulation.gids()
+                gids = simulation.gids() if simulation else circuit.gids()
         else:
             try:
                 gids = _util.target_string_to_gids(targets, simulation)
@@ -87,4 +96,13 @@ class LoadDialog(QMLBaseDialog):
                 self.dialog.invalidTarget(None, *e.args)
                 return
 
-        self.done.emit(simulation, gids, display_mode)
+            if len(_np.intersect1d(circuit.gids(), gids)) < len(gids):
+                self.dialog.invalidTarget(
+                    None, "Found GIDs out of circuit range")
+                return
+
+        # Checking of all the gids are contained within the circuit to
+        # avoid a error during loading, which is harder to recover for the GUI
+        all_gids = circuit.gids()
+
+        self.done.emit(simulation, circuit, gids, display_mode)

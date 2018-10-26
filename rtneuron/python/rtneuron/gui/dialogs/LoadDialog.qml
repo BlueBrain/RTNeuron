@@ -164,7 +164,8 @@ ModalDialog
                             FileDialog
                             {
                                 title: qsTr("Open Blue or Circuit config...")
-                                nameFilters: [ "Configs (BlueConfig CircuitConfig)",
+                                nameFilters: [ "Configs (BlueConfig " +
+                                               "CircuitConfig *.json ",
                                                "All files (*)" ]
                                 onAccepted:
                                 {
