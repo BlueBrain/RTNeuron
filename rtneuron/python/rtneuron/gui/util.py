@@ -32,9 +32,9 @@ def target_string_to_gids(targets, simulation):
     """
     def target(s):
         s = s.lstrip().rstrip()
-        if _re.match('^[1-9][0-9]*$', s):
+        if _re.match('^[0-9]*$', s):
             key = int(s)
-        elif _re.match('^[1-9][0-9]*-[1-9][0-9]*$', s):
+        elif _re.match('^[0-9]*-[0-9]*$', s):
             first, second = s.split('-')
             key = range(int(first), int(second) + 1)
         else:

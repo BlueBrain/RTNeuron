@@ -619,6 +619,11 @@ class GUI(LoaderGUI):
         self._model_handler = ModelHandler(scene, qml)
         self._scene = scene
 
+        # Hiding the simulation player if no simulation config was loaded
+        if _rtneuron.simulation is None:
+            player = qml.findChild(QtQuick.QQuickItem, "player")
+            player.setProperty("visible", False)
+
     def _connect_engine_implementation(self, engine):
 
         self._player.engine_player = engine.player

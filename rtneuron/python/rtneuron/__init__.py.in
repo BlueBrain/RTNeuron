@@ -530,7 +530,6 @@ def display_morphology_file(file_name, use_tubelets=True, soma=True, argv=None):
         scene_attributes.circuit = config_name
         scene_attributes.use_meshes = False
         scene_attributes.use_cuda = False
-        scene_attributes.use_octree = False
         scene_attributes.lod = AttributeMap()
         scene_attributes.lod.neurons = AttributeMap()
         if use_tubelets:

@@ -51,7 +51,8 @@ class LoaderGUI(BaseGUI):
     def scene_created(self, scene):
         pass
 
-    def _on_load_dialog_done(self, simulation, gids, display_mode):
+    def _on_load_dialog_done(self, simulation, circuit, gids, display_mode):
+
         _rtneuron.simulation = simulation
 
         # Closing the dialog
@@ -61,7 +62,7 @@ class LoaderGUI(BaseGUI):
         # Adding the targets to the scene
         view = _rtneuron.engine.views[0]
         scene = view.scene
-        scene.circuit = simulation.open_circuit()
+        scene.circuit = circuit
 
         self.progress = Progress(self._overlay)
         self.progress.done.connect(self._on_progress_done)
