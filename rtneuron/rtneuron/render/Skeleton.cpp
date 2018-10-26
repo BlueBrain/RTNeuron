@@ -264,21 +264,21 @@ public:
     ArrayPtr<uint32_t> visibilities;
     /* This is the offset of this particular skeleton in the
        _devVisibilities array */
-    size_t offset = std::numeric_limits<size_t>::max();
+    size_t offset{std::numeric_limits<size_t>::max()};
     /* Visibilities array size. Only defined if an array per skeleton
        is used. */
-    size_t size = 0;
+    size_t size{0};
 
-    unsigned int visibilityVersion = 0;
-    CullingState cullingState = UNDEFINED_VISIBILITY;
+    unsigned int visibilityVersion{0};
+    CullingState cullingState{Skeleton::FULLY_VISIBLE};
 
     // Replace with a camera/eye indexed AutoExpandLFVector?
     typedef std::map<osgUtil::CullVisitor*, osg::Matrixf> ModelViewCache;
     ModelViewCache modelViewCache;
 
     /* Used with per skeleton readback */
-    cudaEvent_t ready = 0;
-    bool pending = false;
+    cudaEvent_t ready{0};
+    bool pending{false};
 
     static void dirty(PerCameraAndEyeStates& states)
     {

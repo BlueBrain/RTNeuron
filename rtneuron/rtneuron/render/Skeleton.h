@@ -60,7 +60,6 @@ public:
 
     enum CullingState
     {
-        UNDEFINED_VISIBILITY,
         FULLY_VISIBLE,
         VISIBLE,
         NOT_VISIBLE
