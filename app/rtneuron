@@ -21,13 +21,14 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# Checking if rtneuron.py is inside a development tree or is a system wide
-# installed application (either by system package or GNU module).
-import sys
-import os
+import functools
 import math
 import numpy
+import os
+import sys
 
+# Checking if rtneuron.py is inside a development tree or is a system wide
+# installed application (either by system package or GNU module).
 prefix = os.path.abspath(sys.argv[0])
 prefix = os.path.dirname(os.path.dirname(prefix))
 
@@ -71,16 +72,17 @@ sys_exit = exit
 # extract the first view and its scene to inject the variables in the
 # rtneuron namespace. This way, the variables are kept up to date in the
 # IPython console.
-# The decorator module simplifies this task and helps to preserve the
-# signature and documentation of the decorated functions.
-import decorator as _decorator
-@_decorator.decorator
+# functools.wraps preserves the signature and documentation of the decorated
+# functions.
 def _scene_view_update_decorator(func, *args, **kwargs):
-    x = func(*args, **kwargs)
-    if hasattr(rtneuron, "engine"):
-        rtneuron.view = rtneuron.engine.views[0]
-        rtneuron.scene = rtneuron.view.scene
-    return x
+    @functools.wraps(func)
+    def decorated(func, *args, **kwargs):
+        x = func(*args, **kwargs)
+        if hasattr(rtneuron, "engine"):
+            rtneuron.view = rtneuron.engine.views[0]
+            rtneuron.scene = rtneuron.view.scene
+        return x
+    return decorated
 
 rtneuron.display_circuit = \
     _scene_view_update_decorator(rtneuron.display_circuit)
