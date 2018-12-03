@@ -38,10 +38,10 @@ set(RTNEURON_MAINTAINER_NAME "Blue Brain Project")
 set(RTNEURON_MAINTAINER_EMAIL "<bbp-open-source@googlegroups.com>")
 set(RTNEURON_MAINTAINER_MAINTAINER "${RTNEURON_MAINTAINER_NAME} ${RTNEURON_MAINTAINER_EMAIL}")
 set(RTNEURON_LICENSE GPLv3)
-set(RTNEURON_DEB_DEPENDS ipython3 python3-numpy python3-dev python3-decorator
-  python3-pyqt5 python3-pyqt5.qtquick python3-opengl qml-module-qtquick-controls
-  qml-module-qtquick-layouts qml-module-qtquick-dialogs
-  nvidia-cuda-toolkit nvidia-cuda-dev)
+set(RTNEURON_DEB_DEPENDS ipython3 python3-numpy python3-dev python3-pyqt5
+  python3-pyqt5.qtquick python3-opengl qml-module-qtquick-controls
+  qml-module-qtquick-layouts qml-module-qtquick-dialogs nvidia-cuda-toolkit
+  nvidia-cuda-dev)
 
 set(COMMON_PROJECT_DOMAIN ch.epfl.bluebrain)
 
