@@ -76,7 +76,7 @@ sys_exit = exit
 # functions.
 def _scene_view_update_decorator(func, *args, **kwargs):
     @functools.wraps(func)
-    def decorated(func, *args, **kwargs):
+    def decorated(*args, **kwargs):
         x = func(*args, **kwargs)
         if hasattr(rtneuron, "engine"):
             rtneuron.view = rtneuron.engine.views[0]
