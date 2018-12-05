@@ -43,6 +43,11 @@ try:
     _has_rest_support = True
 except:
     _has_rest_support = False
+try:
+    import venv
+    _has_venv = True
+except ImportError:
+    _has_venv = False
 
 DEFAULT_BLUECONFIG="/nfs4/bbp.epfl.ch/visualization/Circuits/KaustCircuit/BlueConfig"
 DEFAULT_APP='circuit_viewer'
@@ -446,11 +451,12 @@ class ParseProfilingOptions(argparse.Action):
 # Declares and parses the command line options
 def command_line_options(argv):
     args_parser = argparse.ArgumentParser(
-        usage="""rtneuron [-h] [-v] [--shell] [--app app_name]
-                       [-c filename] [--target name [neuron_mode [color]]]
-                       [-n gid [neuron_mode [color]]]
-                       [--neurons start_gid end_gid [neuron_mode [color]]]
-                       [options...]""",
+        usage=("rtneuron [-h] [-v] [--shell] " + (
+            "[--venv end_dir] " if _has_venv else "") + """[--app app_name]
+                 [-c filename] [--target name [neuron_mode [color]]]
+                 [-n gid [neuron_mode [color]]]
+                 [--neurons start_gid end_gid [neuron_mode [color]]]
+                 [options...]"""),
         description="RTNeuron command line application",
         epilog="For further help please check the user guide available at: https://bbp.epfl.ch/documentation/code/RTNeuron-${VERSION_MAJOR}.${VERSION_MINOR}/index.html",
         formatter_class=HelpFormatter)
@@ -487,6 +493,11 @@ def command_line_options(argv):
         "--shell", action="store_true", default=False,
          help="Start an interactive IPython shell after initialization (or" \
         " a regular console if IPython is not available).")
+
+    if _has_venv:
+        args_parser.add_argument(
+            "--venv", type=str, metavar="dirname",
+            help="Creates a virtual Python environment in a target directory")
 
     # Data loading options
     group = args_parser.add_argument_group("Data loading options")
@@ -1023,18 +1034,3 @@ def create_rtneuron_engine_attributes(options):
         attr.profile.enable = True
 
     return attr
-
-    # Per layer values for interneurons
-    # Layer 1  Layer 2   Layer 3   Layer 4  Layer 5   Layer 6
-    # NGC 7.15 NGC  7.61 NGC  7.61 NGC 7.61 NGC  7.61 NGC 7.61
-    # CRC 7.27
-    #          BP   6.47 BP   6.47 BP  7.10 BP   7.10 BP  7.10
-    #          ChC  8.04 ChC  8.01 ChC 7.97 ChC  8.04 ChC 7.98
-    # LBC 6.62 LBC  8.53 LBC  8.53 LBC 9.75 LBC 10.03 LBC 9.38
-    # NBC 7.48 NBC  8.75 NBC  8.87 NBC 8.20 NBC  7.80 NBC 8.75
-    #          MC   9.85 MC   9.41 MC  9.32 MC   8.93 MC  9.48
-    # ADC 7.72
-    # AHC 7.53
-    #          DBC  6.46 DBC  6.63 DBC 6.52 DBC  6.63 DBC 6.85
-    # SBC 6.55 SBC  7.02 SBC  7.19 SBC 9.00 SBC  7.76 SBC 7.79
-    #          BTC  9.13 BTC  9.57 BTC 8.35 BTC  9.36 BTC 9.62
