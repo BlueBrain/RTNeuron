@@ -18,12 +18,17 @@
 ## You should have received a copy of the GNU General Public License along
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-import rtneuron as _rtneuron
-from .. import util as _util
+
+import numpy as np
+import brain as brain
+from PyQt5 import QtCore
+import rtneuron
+
+from .. import util
 
 from .QMLBaseDialog import *
-import numpy as _np
-import brain as _brain
+
+__all__ = ['LoadDialog']
 
 class LoadDialog(QMLBaseDialog):
     """
@@ -63,13 +68,13 @@ class LoadDialog(QMLBaseDialog):
 
         # Validate the target string and create a list of targets
         try:
-            simulation = _rtneuron._init_simulation(
+            simulation = rtneuron._init_simulation(
                 self._default_config if config_file == "" else config_file)
             circuit = simulation.open_circuit()
         except RuntimeError as error:
             # Try to open the config_file directly as a circuit instead
             try:
-                circuit = _brain.Circuit(config_file)
+                circuit = brain.Circuit(config_file)
                 simulation = None
             except RuntimeError:
                 # We report the original error
@@ -91,18 +96,14 @@ class LoadDialog(QMLBaseDialog):
                 gids = simulation.gids() if simulation else circuit.gids()
         else:
             try:
-                gids = _util.target_string_to_gids(targets, simulation)
+                gids = util.target_string_to_gids(targets, simulation)
             except RuntimeError as e:
                 self.dialog.invalidTarget(None, *e.args)
                 return
 
-            if len(_np.intersect1d(circuit.gids(), gids)) < len(gids):
+            if len(np.intersect1d(circuit.gids(), gids)) < len(gids):
                 self.dialog.invalidTarget(
                     None, "Found GIDs out of circuit range")
                 return
-
-        # Checking of all the gids are contained within the circuit to
-        # avoid a error during loading, which is harder to recover for the GUI
-        all_gids = circuit.gids()
 
         self.done.emit(simulation, circuit, gids, display_mode)

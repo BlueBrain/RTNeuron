@@ -20,17 +20,17 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
 import os
 from PyQt5 import QtCore, QtWidgets, QtQuick
 
-import rtneuron as _rtneuron
+import rtneuron
 
 from .baseGUI import BaseGUI
 from .dialogs import *
 from .selectionHandler import SelectionHandler
 from .simulationPlayer import SimulationPlayer
-from . import dialogs
+
+__all__ = ["GUI"]
 
 # Monsteer is imported last because dialogs imports nest and with this
 # order it's possible to shut up nest import.
@@ -54,7 +54,7 @@ class GUI(BaseGUI):
             os.path.dirname(os.path.realpath(__file__)) + '/Overlay.qml',
             *args, **kwargs)
 
-        _rtneuron.thegui = self
+        rtneuron.thegui = self
 
     def _init_implementation(self):
 
@@ -166,7 +166,7 @@ class GUI(BaseGUI):
             try:
                 if name == "spike_tail":
                     self.spike_tail_value.emit(view.attributes.spike_tail)
-            except:
+            except RuntimeError:
                 print("Unhandled attribute " + name)
 
         def on_attr_changed(category, name, value):
@@ -175,9 +175,9 @@ class GUI(BaseGUI):
                 scene = view.scene
                 if name == 'transparency':
                     if value:
-                        _rtneuron.sceneops.enable_transparency(scene)
+                        rtneuron.sceneops.enable_transparency(scene)
                     else:
-                        _rtneuron.sceneops.disable_transparency(scene)
+                        rtneuron.sceneops.disable_transparency(scene)
                 else:
                     scene.attributes.__setattr__(str(name), value)
             elif category == 'view':
@@ -198,7 +198,7 @@ class GUI(BaseGUI):
     def _on_open_simulation(self):
 
         dialog = OpenSimulationDialog(
-            self._overlay, _rtneuron.simulation, self._player.view.scene)
+            self._overlay, rtneuron.simulation, self._player.view.scene)
 
         def disconnect_dialog():
             # Breaking the ref loop between the dialog and this function, which

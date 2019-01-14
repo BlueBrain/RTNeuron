@@ -302,7 +302,6 @@ def compute_axes(circuit_info, front):
        the collage and the bounding box of the given circuit in this reference
        frame."""
 
-    positions = circuit_info.positions
     transforms = circuit_info.transforms
 
     # The up vector hint is computed as the average of the transformed y-axis of

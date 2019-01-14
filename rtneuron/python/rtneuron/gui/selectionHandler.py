@@ -19,8 +19,9 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import rtneuron as _rtneuron
-import numpy as _numpy
+import rtneuron
+
+__all__ = ['SelectionHandler']
 
 class SelectionHandler(object):
 
@@ -32,7 +33,7 @@ class SelectionHandler(object):
 
         self._scene = view.scene
 
-        if _rtneuron.options.sync_selections:
+        if rtneuron.options.sync_selections:
             self._init_synched_selections(view, background, broker)
         else:
             self._init_local_selections(view, background)
@@ -48,22 +49,20 @@ class SelectionHandler(object):
         background.rectangular_selection.connect(on_rectangular_selection)
 
     def _init_synched_selections(self, view, background, broker):
-        session = _rtneuron.options.sync_selections
+        session = rtneuron.options.sync_selections
 
         self._broker = broker
         if not self._broker:
             if session == True:
-                self._broker = _rtneuron.net.SceneEventBroker()
+                self._broker = rtneuron.net.SceneEventBroker()
             else:
-                self._broker = _rtneuron.net.SceneEventBroker(session)
-            self._broker.trackState = _rtneuron.options.track_selections
+                self._broker = rtneuron.net.SceneEventBroker(session)
+            self._broker.trackState = rtneuron.options.track_selections
 
         def on_cell_selected(gid, section, segment):
             self._broker.sendToggleRequest([gid])
 
         def on_cells_selected(target):
-            # XXX
-
             # Depending on the action we want to toggle a different cell set.
             # For HIGHLIGHT, we request the toggle of the difference between
             # the selected cells and currently highlighted ones.
@@ -83,8 +82,6 @@ class SelectionHandler(object):
         self._scene.cellSetSelected.connect(on_cells_selected)
 
         def updateSelection(target):
-            # XXX
-
             current = self._scene.highlightedNeurons
                 # Unhighlighting deselected
             self._scene.highlight(current - target, False)
@@ -96,14 +93,10 @@ class SelectionHandler(object):
     def _init_local_selections(self, view, background):
 
         def on_cell_selected(gid, section, segment):
-            # XXX
-
             highlighted = self._scene.highlightedNeurons
             self._scene.highlight(gid, not highlighted.contains(gid))
 
         def on_cells_selected(target):
-            # XXX
-
             self._scene.highlight(
                 target, self._selection_action == self.HIGHLIGHT)
 

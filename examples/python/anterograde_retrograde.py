@@ -25,7 +25,6 @@
 # microcircuit using the selection callback feature in RTNeuron.
 
 import brain
-import random
 import argparse
 import rtneuron
 from rtneuron import *
@@ -61,12 +60,13 @@ def anterograde_retrograde(circuit_config, target_name, shell):
    scene.circuit = circuit
 
    # Creating the selection handler and connecting it to the scene.
-   projections = SynapticProjections(scene,
-                                     presynaptic_color = [0, 0, 1, 1],
-                                     postsynaptic_color = [1, 0, 0, 0.5],
-                                     unselected_color = [0, 0, 0, 0.2],
-                                     target_mode = RepresentationMode.SOMA,
-                                     clip_branches = False)
+   projections =  SynapticProjections( # lgtm [py/unused-local-variable]
+      scene,
+      presynaptic_color = [0, 0, 1, 1],
+      postsynaptic_color = [1, 0, 0, 0.5],
+      unselected_color = [0, 0, 0, 0.2],
+      target_mode = RepresentationMode.SOMA,
+      clip_branches = False)
 
    # Adding the neuron target to the scene.
    neurons_attributes = AttributeMap()
@@ -93,8 +93,6 @@ def anterograde_retrograde(circuit_config, target_name, shell):
    if shell:
       start_shell()
    engine.wait()
-
-   del engine
 
 if __name__ == "__main__":
 

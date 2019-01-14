@@ -19,12 +19,16 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import numpy as _np
-import re as _re
+import numpy as np
+import re as re
 
-from .._rtneuron import AttributeMap as _AttributeMap
-from ..util import key_to_gids as _key_to_gids
-from . import NeuronClipping as _NeuronClipping
+from .._rtneuron import AttributeMap
+from ..util import key_to_gids
+
+__all__ = ['create_mtype_colors', 'create_metype_colors',
+           'enable_transparency','disable_transparency',
+           'is_neuron_handler', 'get_neuron_subset', 'get_neurons',
+           'colorize_scene_with_targets', 'colorize_neurons_with_targets']
 
 def _create_random_colors(count, rgb_ranges):
 
@@ -77,7 +81,7 @@ def _create_colors(count, rgb_ranges):
 
     best = 0
     for n in range(max(int(200 / count), 1)):
-        x = _np.random.random(count * dims)
+        x = np.random.random(count * dims)
         r = 0
         for i in range(len(x)):
             x[i] = map_to_range(x[i], rgb_ranges[r])
@@ -98,11 +102,11 @@ def create_mtype_colors(gids, circuit):
     """Create three list containing the labels, gids, and generated
     colors of each of the morphological types found in a neuron set."""
 
-    regex = _re.compile("(.*PC.*)|(.*_SS$)")
+    regex = re.compile("(.*PC.*)|(.*_SS$)")
 
     mtype_names = circuit.morphology_type_names()
     excitatory = list(map(lambda x: regex.match(x) is not None, mtype_names))
-    num_excitatory = _np.sum(excitatory)
+    num_excitatory = np.sum(excitatory)
     mtypes = circuit.morphology_types(gids)
 
     exc_colors, inh_colors = \
@@ -129,7 +133,7 @@ def create_metype_colors(gids, circuit):
     """Create three list containing the labels, Cell_Targets, and generated
     colors of each of the ME type combinations found in a neuron set."""
 
-    regex = _re.compile("(.*PC.*)|(.*_SS$)")
+    regex = re.compile("(.*PC.*)|(.*_SS$)")
 
     mtype_names = circuit.morphology_type_names()
     etype_names = circuit.electrophysiology_type_names()
@@ -146,7 +150,7 @@ def create_metype_colors(gids, circuit):
     num_excitatory = 0
     for j in range(len(mtype_names)):
         for k in range(len(etype_names)):
-            target = gids[_np.logical_and(mtypes == j, etypes == k)]
+            target = gids[np.logical_and(mtypes == j, etypes == k)]
             if target.size == 0:
                 empty.add((j, k))
                 continue
@@ -194,7 +198,7 @@ def enable_transparency(scene, algorithm="auto", **options):
       opacity at which fragments at the back can be considered occluded. The
       algorithm will try to discard these fragments as soon as possible.
     """
-    attributes = _AttributeMap()
+    attributes = AttributeMap()
     attributes.mode = algorithm
 
     for key, value in options.items():
@@ -216,11 +220,11 @@ def enable_transparency(scene, algorithm="auto", **options):
 def disable_transparency(scene):
     """Disable any alpha-blending rendering algorithm active in the given
     scene."""
-    scene.attributes.alpha_blending = _AttributeMap()
+    scene.attributes.alpha_blending = AttributeMap()
 
 def is_neuron_handler(handler):
     obj = handler.object
-    return (type(obj) is _np.ndarray and obj.dtype == "u4" and
+    return (type(obj) is np.ndarray and obj.dtype == "u4" and
             len(obj.shape) == 1)
 
 def get_neuron_subset(target, object=None, simulation=None):
@@ -253,12 +257,12 @@ def get_neurons(scene):
     """Extract all the neurons and neuron object handlers from a scene.
     Return a tuple with a neuron container and the list of neuron object
     handlers or (None, []) if there are no neurons"""
-    gids = _np.zeros((0), dtype="u4")
+    gids = np.zeros((0), dtype="u4")
     neuron_objects = []
     for handler in scene.objects:
         if not is_neuron_handler(handler):
             continue
-        gids = _np.union1d(gids, handler.object)
+        gids = np.union1d(gids, handler.object)
         neuron_objects.append(handler)
     return gids, neuron_objects
 
@@ -286,10 +290,10 @@ def colorize_scene_with_targets(scene, simulation, targets, colors):
             handlers.append((handler, handler.object))
 
     for key, color in zip(targets, colors):
-        gids = _key_to_gids(key, simulation)
+        target = key_to_gids(key, simulation)
 
         for handler, ids in handlers:
-            handler = handler.query(_np.intersect1d(ids, target))
+            handler = handler.query(np.intersect1d(ids, target))
             handler.attributes.color = color
             handler.update()
 
@@ -302,6 +306,6 @@ def colorize_neurons_with_targets(handler, simulation, targets, colors):
     ids = handler.object
     for key, color in zip(targets, colors):
         target = _key_to_cell_target(key, simulation)
-        subset = handler.query(_np.intersect1d(ids, target))
+        subset = handler.query(np.intersect1d(ids, target))
         subset.attributes.color = color
         subset.update()

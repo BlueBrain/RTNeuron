@@ -134,7 +134,7 @@ def _compute_eye_position(positions, options):
     # Adjuting the final position to consider spheres with radius instead
     # of points if needed.
     radius = options.point_radius
-    if len(positions) == 1 and radius == None:
+    if len(positions) == 1 and radius is None:
         radius = 200
     if radius:
         assert(radius > 0)

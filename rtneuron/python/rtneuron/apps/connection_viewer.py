@@ -23,7 +23,7 @@ import os as _os
 import numpy as _np
 import weakref as _weakref
 
-from PyQt5 import QtCore, QtGui
+from PyQt5 import QtCore
 
 import rtneuron as _rtneuron
 from rtneuron.gui import LoaderGUI, display_empty_scene_with_GUI
@@ -507,9 +507,6 @@ class SynapseAnnotations(object):
         def __init__(self, synapse, connection_side, cell_pair, gui, camera):
             super(SynapseAnnotations.Annotation, self).__init__(gui, camera)
 
-            post_gid = synapse.post_gid()
-            pre_gid = synapse.pre_gid()
-
             properties = _synaptic_properties(
                 cell_pair.morphologies[GUI.POSTSYNAPTIC_CELL])
 
@@ -518,7 +515,7 @@ class SynapseAnnotations(object):
             if connection_side == "post":
                 try :
                     position = synapse.post_surface_position()
-                except:
+                except RuntimeError:
                     position = _compute_postynaptic_position(cell_pair, synapse)
 
                 self.qml.setProperty(
@@ -526,7 +523,7 @@ class SynapseAnnotations(object):
             else:
                 try :
                     position = synapse.pre_surface_position()
-                except:
+                except RuntimeError:
                     position = _compute_preynaptic_position(cell_pair, synapse)
 
                 # The synapse idx in the post-synaptic set is unavailable
@@ -716,7 +713,7 @@ class GUI(LoaderGUI):
     def _on_cell_selected(self, gid, section, segment):
 
         to_pick = self._cell_to_pick
-        if to_pick == None:
+        if to_pick is None:
             return
 
         # Deciding whether the cell picked is the first or the second cell
@@ -734,7 +731,7 @@ class GUI(LoaderGUI):
 
     def _on_synapse_selected(self, synapse):
 
-        if self._cell_to_pick == None or self._keyHandler.shiftPressed:
+        if self._cell_to_pick is None or self._keyHandler.shiftPressed:
             self._annotate_synapse.emit(synapse)
             return
 
@@ -774,7 +771,7 @@ class GUI(LoaderGUI):
 
         # If the cell to pick is empty there is no need to do anything
         # regardless of the other cell being already picked or not.
-        if self._cell_pair.handlers[to_pick] == None:
+        if self._cell_pair.handlers[to_pick] is None:
             self._cell_to_pick = to_pick
             return
 
@@ -783,7 +780,7 @@ class GUI(LoaderGUI):
         # If only one cell had been picked so far an it has the same role
         # of the cell for which picking is going to be activated, this is
         # basically a reset.
-        if self._cell_pair.handlers[1 - to_pick] == None:
+        if self._cell_pair.handlers[1 - to_pick] is None:
             self._cell_to_pick = to_pick
             self._reset(True)
             return
@@ -897,7 +894,6 @@ class GUI(LoaderGUI):
 
         properties = _synaptic_properties(
             self._cell_pair.morphologies[self.POSTSYNAPTIC_CELL])
-        statistics = []
         info.append(("Average values (\u00B1 std. deviation)", ""))
         for name, unit, functor in properties:
             values = _np.array([functor(s) for s in self._synapses])

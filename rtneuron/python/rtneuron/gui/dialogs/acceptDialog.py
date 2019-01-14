@@ -19,9 +19,11 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from PyQt5 import QtCore as _Qt
+from PyQt5 import QtCore
 
 from .QMLBaseDialog import *
+
+__all__ = ["AcceptDialog"]
 
 class AcceptDialog(object):
 
@@ -51,7 +53,7 @@ class AcceptDialog(object):
         self._dialog.dialog.done.connect(self._on_done)
         self._dialog.show()
 
-        loop = _Qt.QEventLoop()
+        loop = QtCore.QEventLoop()
         while not self._done:
             loop.processEvents()
         self._dialog.close()

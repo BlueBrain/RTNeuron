@@ -19,13 +19,13 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import weakref
-
 from PyQt5 import QtGui, QtCore
 
-from rtneuron.gui.QMLComponent import QMLComponent as _QMLComponent
+from rtneuron.gui.QMLComponent import QMLComponent
 
-class QMLAnnotation(_QMLComponent):
+__all__ = ['QMLComponent']
+
+class QMLAnnotation(QMLComponent):
 
     closed = QtCore.pyqtSignal(object)
 
@@ -53,7 +53,7 @@ class QMLAnnotation(_QMLComponent):
     def paint(self, painter, glwidget):
         # This method paints the line connection the 3D point tracked in the
         # scene and the annotation
-        if self._point == None:
+        if self._point is None:
             return
 
         end = self._compute_projected_point(glwidget)

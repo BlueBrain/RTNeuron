@@ -24,7 +24,6 @@
 from __future__ import print_function
 
 from rtneuron import *
-import bbp
 import brain
 from random import random, seed
 import sys

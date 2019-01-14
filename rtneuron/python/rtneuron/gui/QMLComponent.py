@@ -23,6 +23,8 @@ import os
 
 from PyQt5 import QtCore, QtQml, QtQuick
 
+__all__ = ['QMLComponent']
+
 class QMLComponent(QtCore.QObject):
     """
     Class for creating QML components from qml files.

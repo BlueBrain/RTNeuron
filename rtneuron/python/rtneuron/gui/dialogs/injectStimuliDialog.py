@@ -19,14 +19,17 @@
 ## You should have received a copy of the GNU General Public License along
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 import os
-from PyQt5 import QtCore, QtGui, QtQml
+from PyQt5 import QtCore
 
-from rtneuron import nest as _nest
+from rtneuron import nest
 
-import rtneuron.sceneops.util as _sceneops
+import rtneuron.sceneops.util as sceneops
 
 from .QMLDialog import *
+
+__all__ = ['InjectStimuliDialog']
 
 class GeneratorListModel(QtCore.QAbstractListModel):
 
@@ -36,7 +39,7 @@ class GeneratorListModel(QtCore.QAbstractListModel):
 
         QtCore.QAbstractListModel.__init__(self, parent, *args)
         self._data = []
-        for generator in _nest.Models():
+        for generator in nest.Models():
              if "generator" in generator:
                  self._data.append(generator)
 
@@ -89,7 +92,7 @@ class GeneratorDetailModel(QtCore.QAbstractListModel):
         return self._roles
 
     def get_generator_parameters(self):
-        ret = {"model": _nest.SLILiteral(self._generator_name)}
+        ret = {"model": nest.SLILiteral(self._generator_name)}
         for i in range(len(self._generator_keys)):
             ret[self._generator_keys[i]] = self._generator_values[i]
 
@@ -101,7 +104,7 @@ class GeneratorDetailModel(QtCore.QAbstractListModel):
         self._generator_name = generator_name
         self._generator_keys = []
         self._generator_values = []
-        generator_dict = _nest.GetDefaults(generator_name)
+        generator_dict = nest.GetDefaults(generator_name)
 
         keys = list(generator_dict.keys())
         keys.sort()
@@ -111,15 +114,15 @@ class GeneratorDetailModel(QtCore.QAbstractListModel):
             # Trying to create a generator applying the default value on
             # the key, it NEST complains, we assume that the property is
             # read-only.
-            generator = _nest.Create(generator_name)
+            generator = nest.Create(generator_name)
             try:
                 parameters = {key: generator_dict[key]}
-                _nest.SetStatus(generator, parameters)
-            except _nest.pynestkernel.NESTError as e:
+                nest.SetStatus(generator, parameters)
+            except nest.pynestkernel.NESTError as e:
                 if "Unused" in str(e):
-                    _nest.ResetKernel()
+                    nest.ResetKernel()
                     continue
-            _nest.ResetKernel()
+            nest.ResetKernel()
 
             value = generator_dict[key]
             test_set = set()
@@ -210,7 +213,7 @@ class InjectStimuliDialog(QMLDialog):
             return
 
         if len(self.view.scene.highlightedNeurons) == 0:
-            gids, dummy = _sceneops.get_neurons(self.view.scene)
+            gids, dummy = sceneops.get_neurons(self.view.scene)
         else:
             gids = self.view.scene.highlightedNeurons
 
