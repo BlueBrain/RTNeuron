@@ -195,7 +195,7 @@ if options.gui:
 
 # Loading the circuit data (only neurons and synapses)
 targets = []
-if options.config != None:
+if options.config is not None:
     # Opening simulation
     try:
         simulation = brain.Simulation(options.config)
@@ -356,7 +356,7 @@ if options.sim_window:
 # Setting up frame grabbing
 if options.grab_frames:
     params = rtneuron.RecordingParams()
-    if options.camera_path != None:
+    if options.camera_path is not None:
         path = rtneuron.CameraPath()
         path.load(options.camera_path)
         params.cameraPath = path

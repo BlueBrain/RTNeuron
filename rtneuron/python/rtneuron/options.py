@@ -29,22 +29,22 @@ from rtneuron import AttributeMap, RTNeuron, ColorScheme, RepresentationMode, \
                      NeuronLOD, DataBasePartitioning, CameraPathManipulator
 
 try:
-    from rtneuron import VRPNManipulator
+    from rtneuron import VRPNManipulator # lgtm [py/unused-import]
     _has_vrpn_support = True
-except:
+except ImportError:
     _has_vrpn_support = False
 try:
-    import rtneuron.net
+    import rtneuron.net  # lgtm [py/unused-import]
     _has_net_support = True
-except:
+except ImportError:
     _has_net_support = False
 try:
-    from rtneuron.net import RestInterface
+    from rtneuron.net import RestInterface  # lgtm [py/unused-import]
     _has_rest_support = True
-except:
+except ImportError:
     _has_rest_support = False
 try:
-    import venv
+    import venv  # lgtm [py/unused-import]
     _has_venv = True
 except ImportError:
     _has_venv = False
@@ -216,7 +216,7 @@ def parse_neuron_color_scheme(values, namespace, action):
         elif valid_by_width(values[0]): # by-width
             try :
                 attenuation = float(values[0].split('@')[1])
-            except :
+            except (ValueError, IndexError):
                 attenuation = 2.0
             del values[0]
 
@@ -920,11 +920,11 @@ def create_rtneuron_engine_attributes(options):
 
     try:
         attr.window_width = int(os.environ['EQ_WINDOW_IATTR_HINT_WIDTH'])
-    except:
+    except (KeyError, ValueError):
         pass
     try:
         attr.window_height = int(os.environ['EQ_WINDOW_IATTR_HINT_HEIGHT'])
-    except:
+    except (KeyError, ValueError):
         pass
     if options.window_size:
         attr.window_width, attr.window_height = options.window_size

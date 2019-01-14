@@ -22,12 +22,13 @@
 # For Python3 forward compatiblity
 from __future__ import print_function
 
-import brain as _brain
 from .. import _rtneuron
 from . import NeuronClipping
-from . import util as _util
+from . import util
 
-import numpy as _np
+import numpy as np
+
+__all__ = ['SynapticProjections']
 
 # The unselected color alpha is multiplied by this factor and used as the
 # alpha channel of dimmed colors.
@@ -49,7 +50,7 @@ def _find_neuron(handlers, gid):
     Return a tuple (neuron, handler) if the neuron is found, None otherwise.
     """
     for handler in handlers:
-        if _util.is_neuron_handler(handler):
+        if util.is_neuron_handler(handler):
             # Converting to int in case gid is numpy.int32
             handler = handler.query([int(gid)])
             if len(handler.object) == 1:
@@ -61,7 +62,7 @@ def _find_handler(handlers, gid):
     handler for it.
     """
     for handler in handlers:
-        if _util.is_neuron_handler(handler):
+        if util.is_neuron_handler(handler):
             subhandler = handler.query([gid])
             if subhandler.object.size() == 1:
                 # No need to keep searching as neurons can only be present in a
@@ -147,9 +148,9 @@ class SynapticProjections:
                 self.reset()
 
             def reset(self):
-                self.post_target = _np.zeros((0), dtype="u4")
-                self.pre_target = _np.zeros((0), dtype="u4")
-                self.pre_and_post_target = _np.zeros((0), dtype="u4")
+                self.post_target = np.zeros((0), dtype="u4")
+                self.pre_target = np.zeros((0), dtype="u4")
+                self.pre_and_post_target = np.zeros((0), dtype="u4")
                 self.post_handlers = []
                 self.pre_handlers = []
                 self.pre_and_post_handlers = []
@@ -180,33 +181,27 @@ class SynapticProjections:
 
     def show_projections(self, presynaptic=None, postsynaptic=None):
 
-        gids, handlers = _util.get_neurons(self._scene)
+        gids, handlers = util.get_neurons(self._scene)
         if len(gids) == 0:
             return
         # Reset attributes
         _set_attributes(handlers, self._unselected_attributes())
 
-        unselected_cells = gids
-
         if presynaptic is None:
             presynaptic = gids
         else:
-            presynaptic = _np.intersect1d(presynaptic, gids)
+            presynaptic = np.intersect1d(presynaptic, gids)
 
         if postsynaptic is None:
             postsynaptic = presynaptic
-            pre_only = _np.zeros((0), dytpe="u4")
-            post_only = _np.zeros((0), dytpe="u4")
             common = presynaptic
             full_target = presynaptic
         else:
-            presynaptic = _np.intersect1d(presynaptic, gids)
-            pre_only = _np.setdiff1d(presynaptic, postsynaptic)
-            post_only = _np.setdiff1d(postsynaptic, presynaptic)
-            common = _np.intersect1d(postsynaptic, presynaptic)
-            full_target = _np.union1d(postsynaptic, presynaptic)
+            presynaptic = np.intersect1d(presynaptic, gids)
+            common = np.intersect1d(postsynaptic, presynaptic)
+            full_target = np.union1d(postsynaptic, presynaptic)
 
-        unselected_cells = _np.setdiff1d(gids, full_target)
+        unselected_cells = np.setdiff1d(gids, full_target)
         self._unselected_handlers = \
             _get_subhandlers(unselected_cells, handlers)
         self._connected_cells.reset()
@@ -223,10 +218,10 @@ class SynapticProjections:
         local = circuit.Coordinates.local
 
         # Presynaptic only cells
-        pre_gids = _np.unique(synapses.pre_gids())
+        pre_gids = np.unique(synapses.pre_gids())
         self._connected_cells.pre_target = pre_gids
-        self._disconnected_cells.pre_target = _np.setdiff1d(presynaptic,
-                                                            pre_gids)
+        self._disconnected_cells.pre_target = np.setdiff1d(presynaptic,
+                                                           pre_gids)
 
         # Computing the definite subhandlers use for presynaptic cells and
         # updating the color of the disconnected cells.
@@ -252,10 +247,10 @@ class SynapticProjections:
                 _find_neuron(handlers, gid).apply(clipping)
 
         # Postsynaptic only cells
-        post_gids = _np.unique(synapses.post_gids())
+        post_gids = np.unique(synapses.post_gids())
         self._connected_cells.post_target = post_gids
-        self._disconnected_cells.post_target = _np.setdiff1d(postsynaptic,
-                                                             post_gids)
+        self._disconnected_cells.post_target = np.setdiff1d(postsynaptic,
+                                                            post_gids)
 
         # Computing the definite subhandlers use for presynaptic cells and
         # updating the color of the disconnected cells.
@@ -299,11 +294,11 @@ class SynapticProjections:
 
                 _find_neuron(handlers, gid).apply(clipping)
 
-        pre_post_gids = _np.union1d(pre_gids, post_gids)
+        pre_post_gids = np.union1d(pre_gids, post_gids)
         self._connected_cells.pre_and_post_target = \
-            _np.intersect1d(common, pre_post_gids)
+            np.intersect1d(common, pre_post_gids)
         self._disconnected_cells.pre_and_post_target = \
-            _np.setdiff1d(common, pre_post_gids)
+            np.setdiff1d(common, pre_post_gids)
 
         # Computing the definite subhandlers used for cells in both sets and
         # updating the color of the disconnected ones.
@@ -317,7 +312,7 @@ class SynapticProjections:
         according to the current attributes for mode, color and clipping.
         """
 
-        gids, handlers = _util.get_neurons(self._scene)
+        gids, handlers = util.get_neurons(self._scene)
         if len(gids) == []:
             return
         # Reset attributes
@@ -338,8 +333,8 @@ class SynapticProjections:
             post_handler.update()
             return
 
-        self.postsynaptic_neurons = _np.array([gid], dtype="u4")
-        presynaptic_neurons = _np.unique(synapses.pre_gids())
+        self.postsynaptic_neurons = np.array([gid], dtype="u4")
+        presynaptic_neurons = np.unique(synapses.pre_gids())
         self.presynaptic_neurons = presynaptic_neurons
 
         # Setting up targets used for updating the colors
@@ -350,9 +345,9 @@ class SynapticProjections:
 
         self._disconnected_cells.reset()
 
-        selected = _np.union1d(self._connected_cells.pre_target,
-                               self.postsynaptic_neurons)
-        unselected = _np.setdiff1d(gids, selected)
+        selected = np.union1d(self._connected_cells.pre_target,
+                              self.postsynaptic_neurons)
+        unselected = np.setdiff1d(gids, selected)
         self._unselected_handlers = _get_subhandlers(unselected, handlers)
 
         _set_attributes(self._connected_cells.post_handlers,
@@ -381,7 +376,7 @@ class SynapticProjections:
         """Find the postsynaptic cells of the given one and display them
         according to the current attributes for mode, color and clipping.
         """
-        gids, handlers = _util.get_neurons(self._scene)
+        gids, handlers = util.get_neurons(self._scene)
         if len(gids) == 0:
             return
         # Reset attributes
@@ -402,8 +397,8 @@ class SynapticProjections:
             pre_handler.update()
             return
 
-        self.presynaptic_neurons = _np.array([gid], dtype="u4")
-        postsynaptic_neurons = _np.unique(synapses.post_gids())
+        self.presynaptic_neurons = np.array([gid], dtype="u4")
+        postsynaptic_neurons = np.unique(synapses.post_gids())
         self.postsynaptic_neurons = postsynaptic_neurons
 
         # Setting up handlers used for updating the colors
@@ -414,9 +409,9 @@ class SynapticProjections:
 
         self._disconnected_cells.reset()
 
-        selected = _np.union1d(self._connected_cells.post_target,
-                               self.presynaptic_neurons)
-        unselected = _np.setdiff1d(gids, selected)
+        selected = np.union1d(self._connected_cells.post_target,
+                              self.presynaptic_neurons)
+        unselected = np.setdiff1d(gids, selected)
         self._unselected_handlers = _get_subhandlers(unselected, handlers)
 
         # Updating color and mode attributes of all participating neurons
@@ -446,7 +441,7 @@ class SynapticProjections:
     def clear(self):
         # Toggling selection to none
         self._selected = None
-        neurons, handlers = _util.get_neurons(self._scene)
+        neurons, handlers = util.get_neurons(self._scene)
         if len(neurons) == 0:
             return
         attributes = _rtneuron.AttributeMap(

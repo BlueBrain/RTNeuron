@@ -29,13 +29,11 @@ except NameError:
 
 from rtneuron import *
 import brain
-from random import random, seed
 
 import argparse
 import math
 import numpy
 import os
-import sys
 
 os.environ['EQ_WINDOW_IATTR_HINT_DRAWABLE'] = '-12'
 os.environ['EQ_LOG_LEVEL'] = 'ERROR'

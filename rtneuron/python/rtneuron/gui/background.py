@@ -19,13 +19,16 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from OpenGL import GLU # Imported first as a workaround for an issue with the
+from OpenGL import GLU # lgtm [py/unused-import]
+                       # Imported first as a workaround for an issue with the
                        # import statement below in Ubuntu 16.04.
 from OpenGL import GL
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from .interactors import DefaultInteractionMode
+
+__all__ = ['Background']
 
 class Background(QtWidgets.QOpenGLWidget):
     """

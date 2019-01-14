@@ -20,12 +20,14 @@
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 ## contact: juan.hernando@epfl.ch
 
-from .QMLBaseDialog import *
-
 from PyQt5 import QtCore
 
-import rtneuron as _rtneuron
-import brain as _brain
+import rtneuron
+import brain
+
+from .QMLBaseDialog import *
+
+__all__ = ['OpenSimulationDialog']
 
 class OpenSimulationDialog(QMLBaseDialog):
     """A pseudo-modal dialog that pops up a rectangle to select a compartment
@@ -102,7 +104,7 @@ class OpenSimulationDialog(QMLBaseDialog):
         if compartment_report_index != 0:
             report = self._report_list.names[compartment_report_index]
             try:
-                _rtneuron.apply_compartment_report(
+                rtneuron.apply_compartment_report(
                     self._simulation, self._scene, report)
             except RuntimeError as error:
                 self.dialog.invalidReport(report, str(error))
@@ -119,7 +121,7 @@ class OpenSimulationDialog(QMLBaseDialog):
                     spike_file = "default"
                     report = self._simulation.open_spike_report()
                 else:
-                    report = _brain.SpikeReportReader(spike_file)
+                    report = brain.SpikeReportReader(spike_file)
             except RuntimeError as error:
                 self.dialog.invalidReport("default", str(error))
                 return

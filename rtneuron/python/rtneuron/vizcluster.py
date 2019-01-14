@@ -81,7 +81,7 @@ def _vizcluster_setup():
         try:
             # The latest VirtualGL version has renamed this library
             ctypes.CDLL('libvglfaker.so', ctypes.RTLD_GLOBAL)
-        except:
+        except OSError:
             ctypes.CDLL('librrfaker.so', ctypes.RTLD_GLOBAL)
         ctypes.CDLL('libdlfaker.so', ctypes.RTLD_GLOBAL)
 

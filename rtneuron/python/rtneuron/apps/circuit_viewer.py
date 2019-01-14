@@ -28,10 +28,8 @@ from PyQt5 import QtCore, QtGui, QtQuick
 from OpenGL import GL
 
 import rtneuron as _rtneuron
-from rtneuron.gui import LoaderGUI, SelectionHandler, \
-                         display_empty_scene_with_GUI
-from rtneuron.gui.QMLAnnotation import QMLAnnotation
-from rtneuron.gui.dialogs import AcceptDialog, OpenSimulationDialog
+from rtneuron.gui import LoaderGUI, display_empty_scene_with_GUI
+from rtneuron.gui.dialogs import OpenSimulationDialog
 from rtneuron.gui.enums import QmlRepresentationMode
 from rtneuron.gui.simulationPlayer import SimulationPlayer
 from rtneuron.gui import interactors
@@ -460,17 +458,7 @@ class TargetDisplayHandler(QtCore.QObject):
 
     def _on_cell_selected(self, gid, section, segment):
 
-        if self._gid != None:
-            # Returning to previous dislays modes
-            self._scene.neuronSelectionMask = []
-            if len(self._dyes) != 0:
-                # Restoring the attributes of the cell subsets
-                self._apply_dyes()
-            else:
-                self._all_neurons.attributes.mode = self._default_mode
-                self._all_neurons.update()
-            self._gid = None
-        else:
+        if self._gid is None:
             # Making all neurons invisible except the chosen one
             neurons = self._all_neurons
             neurons.attributes.mode = _rtneuron.RepresentationMode.NO_DISPLAY
@@ -483,6 +471,16 @@ class TargetDisplayHandler(QtCore.QObject):
             cell.attributes.mode = _rtneuron.RepresentationMode.WHOLE_NEURON
             cell.update()
             self._gid = gid
+        else:
+            # Returning to previous dislays modes
+            self._scene.neuronSelectionMask = []
+            if len(self._dyes) != 0:
+                # Restoring the attributes of the cell subsets
+                self._apply_dyes()
+            else:
+                self._all_neurons.attributes.mode = self._default_mode
+                self._all_neurons.update()
+            self._gid = None
 
     def _on_add_cell_dye(self, key, fraction, primary_color, secondary_color):
 
@@ -505,7 +503,6 @@ class TargetDisplayHandler(QtCore.QObject):
                 self._qml.showError(
                     "Requested cell set overlaps an existing set")
                 return
-            pass
 
         # Applying the attributes
 
@@ -634,7 +631,7 @@ class GUI(LoaderGUI):
         color = [color.redF(), color.greenF(), color.blueF(), color.alphaF()]
         view = _rtneuron.engine.views[0]
         view.attributes.background = color
-        background = self.background().clear_color = color
+        self.background().clear_color = color
 
     def _on_enable_slice(self, enable):
         background = self.background()

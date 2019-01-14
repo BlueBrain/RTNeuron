@@ -19,12 +19,14 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
+import math
 from PyQt5 import QtCore, QtWidgets
 
-import rtneuron as _rtneuron
+import rtneuron
 
 from .QMLComponent import QMLComponent
+
+__all__ = ['SimulationPlayer']
 
 class SimulationPlayer(QMLComponent):
 
@@ -37,7 +39,7 @@ class SimulationPlayer(QMLComponent):
 
     def __init__(self, qml=None, parent=None, view=None, simulation=None):
         super(SimulationPlayer, self).__init__(
-                parent, 'SimulatorPlayer.qml' if qml == None else qml)
+                parent, 'SimulatorPlayer.qml' if qml is None else qml)
         self._playing = False
         self._looping = False
         self._engine_player = None
@@ -89,7 +91,7 @@ class SimulationPlayer(QMLComponent):
             self._looping = checked
 
         def on_time_changed(value):
-            if player.endTime != player.endTime:
+            if math.isnan(player.endTime):
                 # Simulation window still not adjusted
                 try:
                     player.adjustWindow()
@@ -124,11 +126,11 @@ class SimulationPlayer(QMLComponent):
             self.simulation_time_changed.emit(value, begin, end)
 
         def on_playback_state_changed(state):
-            if state == _rtneuron.SimulationPlayer.PLAYING:
+            if state == rtneuron.SimulationPlayer.PLAYING:
                 self.qml.setPlaybackState(True)
-            elif state == _rtneuron.SimulationPlayer.PAUSED:
+            elif state == rtneuron.SimulationPlayer.PAUSED:
                 self.qml.setPlaybackState(False)
-            elif self._looping and state == _rtneuron.SimulationPlayer.FINISHED:
+            elif self._looping and state == rtneuron.SimulationPlayer.FINISHED:
                 # We don't reset from here because setting the timestamp causes
                 # a state transition that triggers a Qt warning.
                 self._reset_timestamp.emit()
@@ -146,7 +148,7 @@ class SimulationPlayer(QMLComponent):
 
         # Try adjusting the simulation window. This will throw if there's
         # no report attached
-        if player.endTime != player.endTime:
+        if math.isnan(player.endTime):
             try:
                 player.adjustWindow()
                 # If this succeeds we need to enable the controls

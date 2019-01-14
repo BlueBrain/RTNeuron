@@ -26,9 +26,11 @@ from PyQt5 import QtWidgets, QtCore
 from .gui import BaseGUI
 from .loaderGUI import LoaderGUI
 from .selectionHandler import SelectionHandler
-from . import enums as _enums
+from . import enums
 
-import rtneuron as _rtneuron
+import rtneuron as rtneuron
+
+__all__ = ['create_qt_app', 'display_empty_scene_with_GUI']
 
 _XInitThreads_done = False
 
@@ -57,13 +59,13 @@ def create_qt_app():
     application.setStyle("fusion")
     application.setAttribute(QtCore.Qt.AA_DontCreateNativeWidgetSiblings)
 
-    _enums.register()
+    enums.register()
 
     return application
 
 
 def display_empty_scene_with_GUI(
-        GUI, scene_attributes=_rtneuron.AttributeMap(), *args, **kwargs):
+        GUI, scene_attributes=rtneuron.AttributeMap(), *args, **kwargs):
     """Initializes an RTNeuron instance with a GUI overlay and an empty scene.
 
     The gui parameter is a class that must inherit from rtneuron.gui.BaseGUI.
@@ -82,13 +84,15 @@ def display_empty_scene_with_GUI(
     The *args and **kwargs arguments are passed to the GUI constructor.
     """
 
-    qt_app = create_qt_app()
+    qt_app = create_qt_app() # lgmt [py/unused-local-variable]
+                             # We need the QtApplication object in a local
+                             # variable until the scoped is finished
     gui = GUI(*args, **kwargs)
 
-    _rtneuron.display_empty_scene(
+    rtneuron.display_empty_scene(
         scene_attributes=scene_attributes,
         opengl_share_context=gui.get_background_context())
 
-    gui.connect_engine(_rtneuron.engine)
+    gui.connect_engine(rtneuron.engine)
 
     return gui

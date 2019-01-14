@@ -126,7 +126,7 @@ def top_ortho(simulation, targets, **kwargs) :
     gids = _rtneuron.util.targets_to_gids(targets, simulation)
     xzs = options.fit_point_generator(gids, circuit)[:, [0, 2]]
 
-    return _ortho_frustum(xys, **kwargs)
+    return _ortho_frustum(xzs, **kwargs)
 
 top_ortho.__doc__ += _CommonOptions.keyword_doc
 

@@ -19,10 +19,12 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import rtneuron as _rtneuron
+import rtneuron as rtneuron
 from PyQt5.QtCore import QObject, Q_ENUMS
 from PyQt5.QtQml import qmlRegisterType
-import six as _six
+import six
+
+__all__ = ['register']
 
 class EnumMetaclass(type(QObject)):
 
@@ -30,7 +32,7 @@ class EnumMetaclass(type(QObject)):
 
         name = name[3:]
         # Find the enum type in thr rtneuron module with the same name
-        enum = getattr(_rtneuron, name)
+        enum = getattr(rtneuron, name)
         # Create the nested class used by PyQt to enumerate the values
         values = type("Values", (), enum.names)
         attributes["Values"] = values
@@ -48,10 +50,10 @@ class EnumMetaclass(type(QObject)):
 
         return enumType
 
-class QmlRepresentationMode(_six.with_metaclass(EnumMetaclass, QObject)):
+class QmlRepresentationMode(six.with_metaclass(EnumMetaclass, QObject)):
     """A QML ready version of rtneuron.RepresentationMode"""
 
-class QmlColorScheme(_six.with_metaclass(EnumMetaclass, QObject)):
+class QmlColorScheme(six.with_metaclass(EnumMetaclass, QObject)):
     """A QML ready version of rtneuron.ColorScheme"""
 
 def register():

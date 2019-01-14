@@ -20,9 +20,9 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
-import sip
 from PyQt5 import QtCore, QtGui, QtQuickWidgets
+
+__all__ = ['Overlay']
 
 class Overlay(QtQuickWidgets.QQuickWidget):
     """

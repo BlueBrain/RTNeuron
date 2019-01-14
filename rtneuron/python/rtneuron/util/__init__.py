@@ -19,13 +19,11 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import numpy as _np
-import random as _random
-import re as _re
-
-import rtneuron as _rtneuron
-
 from . import camera
+import numpy as np
+import re
+
+__all__ = ['label_to_gids', 'key_to_gids', 'targets_to_gids', 'camera']
 
 def label_to_gids(label, resolver):
     """Convert a cell set label or regular expression to a gid set (numpy u4).
@@ -40,7 +38,7 @@ def label_to_gids(label, resolver):
     try:
         label, fraction = label.split("%")
         fraction = float(fraction) / 100.0
-    except:
+    except ValueError:
         fraction = 1
 
     try:
@@ -52,12 +50,12 @@ def label_to_gids(label, resolver):
         except AttributeError:
             # This is a circuit, regular expressions are not supported.
             raise e
-        prog = _re.compile(label)
-        gids = _np.array((), dtype="u4")
+        prog = re.compile(label)
+        gids = np.array((), dtype="u4")
         for name in names:
             match = prog.match(name)
             if match and match.group(0) == name:
-                gids = _np.append(gids, resolver.gids(name))
+                gids = np.append(gids, resolver.gids(name))
 
         if len(gids) == 0:
             raise
@@ -65,8 +63,8 @@ def label_to_gids(label, resolver):
     if fraction != 1:
         if not gids.flags['W']:
             # The array is readonly, need to copy it
-            gids = _np.array(gids)
-        _np.random.shuffle(gids)
+            gids = np.array(gids)
+        np.random.shuffle(gids)
         gids = gids[0:int(round(len(gids) * fraction))]
         if len(gids) == 0:
             return None
@@ -87,14 +85,14 @@ def key_to_gids(key, resolver):
     """
     if type(key) == str:
         gids = label_to_gids(key, resolver)
-    elif type(key) == int or type(key) == _np.uint32:
+    elif type(key) == int or type(key) == np.uint32:
         # This is a single GID target
-        gids = _np.array([key], dtype="u4")
-    elif type(key) == _np.ndarray and key.dtype in ["u4, u8, i4"]:
+        gids = np.array([key], dtype="u4")
+    elif type(key) == np.ndarray and key.dtype in ["u4, u8, i4"]:
         return key
     else:
         # Assume key is an iterable of something convertible to integers
-        gids = _np.zeros((len(key)), dtype="u4")
+        gids = np.zeros((len(key)), dtype="u4")
         try:
             for i, c in enumerate(key):
                 gids[i] = int(c)
@@ -111,11 +109,11 @@ def targets_to_gids(targets, resolver):
 
     if hasattr(targets, "__len__") and type(targets) is not str:
         try:
-            return _np.array(targets, dtype="u4")
+            return np.array(targets, dtype="u4")
         except:
-            gids = _np.array([], dtype="u4")
+            gids = np.array([], dtype="u4")
             for target in targets:
-                gids = _np.append(gids, key_to_gids(target, resolver))
+                gids = np.append(gids, key_to_gids(target, resolver))
     else:
         gids = key_to_gids(targets, resolver)
     return gids
