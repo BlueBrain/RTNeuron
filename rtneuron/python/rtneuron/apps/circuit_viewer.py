@@ -168,7 +168,6 @@ class SliceEditor(QtCore.QObject):
 
                 color = QtGui.QColor(224, 224, 224, 255)
                 painter.setPen(QtGui.QPen(color))
-                font = painter.font()
                 radius = self.glyph_radius
                 p = self._glyph_position - QtCore.QPointF(radius, radius)
                 _os.path.dirname(_os.path.realpath(__file__))
@@ -533,7 +532,7 @@ class TargetDisplayHandler(QtCore.QObject):
 
         # Restoring the original display attributes if the handle list gets
         # empty and no cell is being uniquely displayed.
-        if len(self._dyes) == 0 and self._gid == None:
+        if len(self._dyes) == 0 and self._gid is None:
             self._all_neurons.attributes.mode = self._default_mode
             self._all_neurons.update()
         else:

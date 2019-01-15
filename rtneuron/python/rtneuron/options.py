@@ -603,7 +603,7 @@ def command_line_options(argv):
         help="Length of spike tails in milliseconds.")
 
     # Scene management options
-    if "${OSGGL3_FOUND}" == "TRUE":
+    if "${OSGGL3_FOUND}" == "TRUE": # lgtm [py/comparison-of-constants]
         args_parser.set_defaults(partitioning=DataBasePartitioning.ROUND_ROBIN)
     else:
         args_parser.set_defaults(partitioning=DataBasePartitioning.SPATIAL)

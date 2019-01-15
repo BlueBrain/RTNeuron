@@ -96,7 +96,7 @@ def key_to_gids(key, resolver):
         try:
             for i, c in enumerate(key):
                 gids[i] = int(c)
-        except:
+        except TypeError:
             raise ValueError("Cannot convert key %s to a GID list." % key)
 
     # Now gids contains a numpy of GIDs or None if the target was not found

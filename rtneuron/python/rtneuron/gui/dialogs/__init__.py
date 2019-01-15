@@ -24,6 +24,9 @@ from .openSimulationDialog import OpenSimulationDialog
 from .progress import Progress
 from .snapshotDialog import SnapshotDialog
 
+__all__ = ['AcceptDialog', 'LoadDialog', 'OpenSimulationDialog', 'Progress',
+           'SnapshotDialog']
+
 try:
    import rtneuron.nest
    _has_nest = True

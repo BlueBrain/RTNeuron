@@ -121,8 +121,7 @@ class GUI(LoaderGUI):
         if operation == _rtneuron.net.CellSetBinaryOpType.SYNAPTIC_PROJECTIONS:
             scene = _rtneuron.engine.views[0].scene
             gids = scene.objects[0].object
-            mask = _np.setdiff1d(
-                _np.setdiff1d(_neurons, pre_target), post_target)
+            mask = _np.setdiff1d(_np.setdiff1d(gids, pre_target), post_target)
             scene.neuronSelectionMask = mask
             self.projections.show_projections(pre_target, post_target)
 

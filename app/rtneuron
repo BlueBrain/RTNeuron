@@ -144,7 +144,7 @@ Type help(app) on the console for additional details""")
     rtneuron.start_shell()
     sys_exit()
 
-if options.config == None:
+if options.config is None:
     print("""\
 RTNeuron ${PROJECT_VERSION}
 
@@ -289,7 +289,7 @@ if options.rest:
         rest_interface = rtneuron.net.RestInterface(sys.argv, view)
         def shutdown_rest_interface():
             global rest_interface
-            del rest_interface
+            del rest_interface # lgtm [py/unnecessary-delete]
         engine.exited.connect(shutdown_rest_interface)
     except RuntimeError as exc:
         print("Error creating REST interface:" + str(exc))
