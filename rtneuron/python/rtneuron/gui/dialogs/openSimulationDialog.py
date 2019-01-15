@@ -118,7 +118,6 @@ class OpenSimulationDialog(QMLBaseDialog):
 
             try:
                 if spike_file == "/default/":
-                    spike_file = "default"
                     report = self._simulation.open_spike_report()
                 else:
                     report = brain.SpikeReportReader(spike_file)

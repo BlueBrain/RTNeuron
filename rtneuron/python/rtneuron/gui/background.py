@@ -70,8 +70,6 @@ class Background(QtWidgets.QOpenGLWidget):
         self._forward = True # This is needed to distinguish between events
                              # that need to be accepted by QOpenGLWidget and
                              # those being accepted by the iteraction mode
-        ret = QtWidgets.QOpenGLWidget.event(self, event)
-
         if self._forward and self.event_sink:
             QtCore.QCoreApplication.sendEvent(self.event_sink, event)
 
@@ -117,7 +115,7 @@ class Background(QtWidgets.QOpenGLWidget):
         GL.glDisable(GL.GL_LIGHTING)
 
     def paintGL(self):
-        if self.texture == None:
+        if self.texture is None:
             GL.glClearColor(0.4, 0.4, 0.4, 1.0)
             GL.glClear(GL.GL_COLOR_BUFFER_BIT)
             return

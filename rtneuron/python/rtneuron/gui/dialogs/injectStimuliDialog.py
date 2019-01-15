@@ -20,7 +20,6 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
 from PyQt5 import QtCore
 
 from rtneuron import nest
@@ -140,7 +139,7 @@ class GeneratorDetailModel(QtCore.QAbstractListModel):
         try:
             self._generator_values[index] = self._generator_types[index](value)
             self._generator_valid[index] = True
-        except:
+        except (ValueError, TypeError):
             self._generator_values[index] = value
             self._generator_valid[index] = False
 

@@ -84,7 +84,7 @@ def display_empty_scene_with_GUI(
     The *args and **kwargs arguments are passed to the GUI constructor.
     """
 
-    qt_app = create_qt_app() # lgmt [py/unused-local-variable]
+    qt_app = create_qt_app() # lgtm [py/unused-local-variable]
                              # We need the QtApplication object in a local
                              # variable until the scoped is finished
     gui = GUI(*args, **kwargs)

@@ -446,7 +446,7 @@ else:
 height = int((dendrite_aabb[1][1] - dendrite_aabb[0][1]) / um_per_pixel)
 
 # Minimum horizontal distance between cell somas in microns
-minimum_cell_distance = width / 10
+minimum_cell_distance = width / 10.0
 
 # We first create a scene for the inset showing the meshes and the location
 # of the clipping planes
