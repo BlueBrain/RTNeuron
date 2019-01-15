@@ -48,6 +48,7 @@ misc_data_path = '${PROJECT_SOURCE_DIR}/tests/python/misc_data/'
 os.environ['EQ_WINDOW_IATTR_HINT_DRAWABLE'] = '-12' # FBO
 os.environ['EQ_WINDOW_IATTR_PLANES_SAMPLES'] = '16'
 os.environ['RTNEURON_INVARIANT_IDLE_AA'] = '1'
+os.environ['RTNEURON_FORCE_LOAD_MORPHOLOGIES'] = '1'
 os.environ['EQ_LOG_LEVEL'] = 'ERROR'
 
 from rtneuron import *
