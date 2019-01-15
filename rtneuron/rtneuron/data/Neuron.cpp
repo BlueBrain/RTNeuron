@@ -64,6 +64,11 @@ namespace core
 */
 namespace
 {
+
+/* Only used for backwards compatibility of tests images */
+const bool _forceLoadMorphologies =
+    getenv("RTNEURON_FORCE_LOAD_MORPHOLOGIES") != 0;
+
 using MorphologyCache = ObjectCache<brain::neuron::Morphology, std::string>;
 MorphologyCache _morphologyCache;
 
@@ -360,7 +365,7 @@ Neuron::Neuron(const Neuron& other, const CircuitSceneAttributes& attributes,
     , _etype(other._etype)
     , _rd(new RenderData(other, mode))
 {
-    if (mode == RepresentationMode::SOMA ||
+    if ((mode == RepresentationMode::SOMA && !_forceLoadMorphologies) ||
         mode == RepresentationMode::NO_DISPLAY)
         return;
 
