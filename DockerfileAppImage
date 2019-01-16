@@ -1,0 +1,46 @@
+FROM bluebrain/rtneuron_builder
+
+# RTNeuron
+################
+
+ADD . /RTNeuron
+RUN cd /RTNeuron && mkdir build && cd build && cmake ../ -DCLONE_SUBPROJECTS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+RUN cd /RTNeuron/osgTransparency && git pull origin master && cd /RTNeuron/build &&  make -j mvd-tool RTNeuron-all RTNeuron-install
+
+WORKDIR /RTNeuron/build
+RUN make -j RTNeuron-install DESTDIR=/usr/local/
+
+#################
+RUN mkdir -p /root/RT
+RUN mkdir -p ./usr/
+WORKDIR /root/RT
+RUN /usr/local/bin/python3.7 -m venv --copies usr
+RUN rsync -av --exclude site-packages /usr/local/lib/python3.7/ /root/RT/usr/lib64/python3.7/
+
+RUN source  ./usr/bin/activate && pip install pyopengl numpy PyQt5==5.9.2 ipython
+ENV PYTHON_SITE_PACKAGES=usr/lib/python3.7/site-packages/
+RUN cp -r /usr/local/lib/python3.7/site-packages/rtneuron/ ${PYTHON_SITE_PACKAGES} && \
+  cp -r /usr/local/lib/python3.7/site-packages/brain/ ${PYTHON_SITE_PACKAGES}
+
+RUN cp -P /usr/local/lib64/lib*so* /usr/local/lib/lib*so* /usr/lib64/libGLEWmx* /usr/lib64/libturbojpeg.so  usr/lib
+
+RUN mkdir -p usr/local/share/RTNeuron && cp -rf /usr/local/share/RTNeuron/shaders usr/local/share/RTNeuron
+RUN cp -r /usr/local/bin/rtneuron usr/bin
+
+# APP image
+###################
+WORKDIR /root
+RUN curl -LO https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage && \
+chmod +x ./linuxdeploy-x86_64.AppImage
+
+# AppImageTool
+RUN curl -LO https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+RUN chmod +x /root/appimagetool-x86_64.AppImage
+RUN /root/appimagetool-x86_64.AppImage --appimage-extract
+
+WORKDIR /root/RT
+
+ADD packaging/AppImage/config .
+RUN chmod +x /root/RT/AppRun
+
+CMD ["/root/squashfs-root/AppRun", "/root/RT", "/tmp/output/rtneuron_x86_64.AppImage"]
