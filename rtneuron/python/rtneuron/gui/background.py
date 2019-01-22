@@ -70,10 +70,12 @@ class Background(QtWidgets.QOpenGLWidget):
         self._forward = True # This is needed to distinguish between events
                              # that need to be accepted by QOpenGLWidget and
                              # those being accepted by the iteraction mode
+        ret = QtWidgets.QOpenGLWidget.event(self, event)
+
         if self._forward and self.event_sink:
             QtCore.QCoreApplication.sendEvent(self.event_sink, event)
 
-        return True
+        return ret
 
     def keyPressEvent(self, event):
         self.interaction_mode = \

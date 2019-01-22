@@ -3,11 +3,11 @@ FROM centos:7.0.1406
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
 
 # Needed to install libopenssl
-RUN yum -y swap -- remove fakesystemd -- install systemd systemd-libs 
+RUN yum -y swap -- remove fakesystemd -- install systemd systemd-libs
 RUN yum install -y yum-plugin-ovl
-RUN yum install -y zlib-devel bzip2 bzip2-devel flex bison git tar gcc gcc-c++ make mesa-libGL-devel libpng-devel libjpeg-turbo-devel libtiff-devel readline-devel sqlite-devel openssl-devel gdbm-devel libtool libffi-devel qt5-base-devel qt5-qtquickcontrols2-devel glew-devel turbojpeg-devel turbojpeg yum-plugin-ovl  gmp-devel mpfr-devel libmpc-devel 
+RUN yum install -y zlib-devel bzip2 bzip2-devel flex bison git tar gcc gcc-c++ make mesa-libGL-devel libpng-devel libjpeg-turbo-devel libtiff-devel readline-devel sqlite-devel openssl-devel gdbm-devel libtool libffi-devel qt5-base-devel qt5-qtquickcontrols2-devel glew-devel turbojpeg-devel turbojpeg yum-plugin-ovl  gmp-devel mpfr-devel libmpc-devel
 RUN yum update -y nss nss-util nspr curl
-RUN yum clean all 
+RUN yum clean all
 
 # GCC 5.4.0
 ################
@@ -19,7 +19,7 @@ mkdir gcc-5.4.0/build  && cd  gcc-5.4.0/build && \
 make -j && make install && rm -rf /gcc-5.4.0
 
 ENV CXX=/usr/local/bin/g++
-ENV CC=/usr/local/bin/gcc 
+ENV CC=/usr/local/bin/gcc
 
 # CMake
 ################
@@ -67,5 +67,3 @@ RUN rm -rf boost_1_65_0*
 RUN env |grep -i CXX
 RUN curl -OL https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-3.4.1.tar.gz && tar xfz OpenSceneGraph-3.4.1.tar.gz && cd OpenSceneGraph-OpenSceneGraph-3.4.1 && mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local && make -j6 && make -j6 install
 RUN rm -rf OpenSceneGraph*
-
-

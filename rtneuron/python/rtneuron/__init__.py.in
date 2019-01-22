@@ -628,14 +628,10 @@ def start_shell(local_ns=None, module=None):
 
         if checkIPythonVersion(3, 0, '>='):
             argv = ["--no-banner"]
-            # Adding Qt5 interoperability only if there's a Qt application
-            # running
-            try:
-                from PyQt5.QtCore import QCoreApplication
-                if QCoreApplication.instance() is not None:
-                    argv.append("--gui=qt5")
-            except ImportError:
-                pass
+            # Adding Qt5 interoperability unconditionally. Otherwise if an
+            # app is started later with start_app(), the UI will be unresponsive
+            argv.append("--gui=qt5")
+
             print("RTNeuron interactive IPython shell")
             IPython.start_ipython(argv=argv, user_ns=local_ns)
         elif checkIPythonVersion(2, 4, '>='):
