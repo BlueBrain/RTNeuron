@@ -38,9 +38,6 @@ try:
     from monsteer.Nesteer import Simulator
     _steering_available = True
 except ImportError as e:
-    print(e)
-    print("Warning: Could not load monsteer module. "
-          "Simulation steering capabilities will not be available")
     _steering_available = False
 
 class GUI(BaseGUI):
@@ -68,6 +65,9 @@ class GUI(BaseGUI):
         if _steering_available:
             self._inject_stimuli_dialog = InjectStimuliDialog(self._overlay)
             self._inject_stimuli_dialog.visible = False
+        else:
+            print("Warning: Could not load monsteer module. "
+                  "Simulation steering capabilities will not be available")
 
         self.spike_tail_value.connect(qml.onSpikeTailSliderValue)
 

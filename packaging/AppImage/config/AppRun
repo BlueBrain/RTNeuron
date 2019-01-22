@@ -3,10 +3,10 @@
 HERE="$(dirname "$(readlink -f "${0}")")"
 
 # C locale is used to avoid errors parsing floating point numbers
-# in locales that use decimal comma when a Qt application is initialized
-LANG=C \
+# in locales that use decimal comma
+LC_NUMERIC=C \
 LD_LIBRARY_PATH=${HERE}/usr/lib:${HERE}/usr/lib/python3.7/site-packages/PyQt5/Qt/lib:$LD_LIBRARY_PATH \
 PYTHONHOME=${HERE}/usr \
 PYTHONPATH=${HERE}/usr/lib/python3.7/site-packages \
+QT_STYLE_OVERRIDE=Fusion \
 ${HERE}/usr/bin/python3.7 ${HERE}/usr/bin/rtneuron $@
-

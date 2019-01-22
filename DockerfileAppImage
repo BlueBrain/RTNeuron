@@ -24,7 +24,7 @@ RUN cp -r /usr/local/lib/python3.7/site-packages/rtneuron/ ${PYTHON_SITE_PACKAGE
 
 RUN cp -P /usr/local/lib64/lib*so* /usr/local/lib/lib*so* /usr/lib64/libGLEWmx* /usr/lib64/libturbojpeg.so  usr/lib
 
-RUN mkdir -p usr/local/share/RTNeuron && cp -rf /usr/local/share/RTNeuron/shaders usr/local/share/RTNeuron
+RUN mkdir -p usr/share/RTNeuron && cp -rf /usr/local/share/RTNeuron/shaders usr/share/RTNeuron
 RUN cp -r /usr/local/bin/rtneuron usr/bin
 
 # APP image

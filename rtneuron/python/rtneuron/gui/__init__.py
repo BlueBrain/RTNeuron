@@ -54,9 +54,6 @@ def create_qt_app():
         _XInitThreads_done = True
 
     application = QtWidgets.QApplication([])
-    # There's something broken in the GTK style which causes problems with
-    # ScrollView. Enforcing another style as a workaround.
-    application.setStyle("fusion")
     application.setAttribute(QtCore.Qt.AA_DontCreateNativeWidgetSiblings)
 
     enums.register()
