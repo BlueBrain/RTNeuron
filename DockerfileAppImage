@@ -4,11 +4,8 @@ FROM bluebrain/rtneuron_builder
 ################
 
 ADD . /RTNeuron
-RUN cd /RTNeuron && mkdir build && cd build && cmake ../ -DCLONE_SUBPROJECTS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
-RUN cd /RTNeuron/osgTransparency && git pull origin master && cd /RTNeuron/build &&  make -j mvd-tool RTNeuron-all RTNeuron-install
-
-WORKDIR /RTNeuron/build
-RUN make -j RTNeuron-install DESTDIR=/usr/local/
+# Avoid linking against libX11.so as it depends on dev packages to exist.
+RUN cd /RTNeuron && mkdir build && cd build && cmake ../ -DCLONE_SUBPROJECTS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local && make -j mvd-tool RTNeuron-all RTNeuron-install
 
 #################
 RUN mkdir -p /root/RT
@@ -22,9 +19,12 @@ ENV PYTHON_SITE_PACKAGES=usr/lib/python3.7/site-packages/
 RUN cp -r /usr/local/lib/python3.7/site-packages/rtneuron/ ${PYTHON_SITE_PACKAGES} && \
   cp -r /usr/local/lib/python3.7/site-packages/brain/ ${PYTHON_SITE_PACKAGES}
 
-RUN cp -P /usr/local/lib64/lib*so* /usr/local/lib/lib*so* /usr/lib64/libGLEWmx* /usr/lib64/libturbojpeg.so  usr/lib
+RUN cp -Pr /usr/local/lib64/lib*so* /usr/local/lib/lib*so* /usr/lib64/libGLEWmx* /usr/lib64/libturbojpeg.so* /usr/lib64/libpng*.so* /usr/lib64/libjpeg*.so* usr/lib
+RUN mkdir usr/lib/osgPlugins-3.4.1 && for ext in `echo 3ds bmp ive jpeg lwo obj osg ply png pnm stl tga tiff`; do cp /usr/local/lib64/osgPlugins-3.4.1/osgdb_$ext.so usr/lib/osgPlugins-3.4.1; done
+RUN cp /usr/lib64/libjpeg.so* /usr/lib64/libpng*.so* /usr/lib64/libtiff.so* /usr/lib64/libjbig* usr/lib
 
 RUN mkdir -p usr/share/RTNeuron && cp -rf /usr/local/share/RTNeuron/shaders usr/share/RTNeuron
+RUN mkdir -p usr/share/osgTransparency && cp -rf /usr/local/share/osgTransparency/shaders usr/share/osgTransparency
 RUN cp -r /usr/local/bin/rtneuron usr/bin
 
 # APP image
