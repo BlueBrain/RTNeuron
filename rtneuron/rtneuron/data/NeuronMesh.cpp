@@ -170,9 +170,11 @@ NeuronMesh::NeuronMesh(const std::string& path)
         case 1:
             LBWARN << "Cannot calculate normals for mesh " << path
                    << "; no triangles or triangle strips found" << std::endl;
+            break;
         case 2:
             LBWARN << "Found degenerated triangle(s) in mesh " << path
                    << std::endl;
+            break;
         default:;
         }
     }

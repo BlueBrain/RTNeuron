@@ -49,7 +49,7 @@ def create_qt_app():
     global _XInitThreads_done
     if not _XInitThreads_done:
         import ctypes
-        x11 = ctypes.cdll.LoadLibrary('libX11.so')
+        x11 = ctypes.cdll.LoadLibrary('libX11.so.6')
         x11.XInitThreads()
         _XInitThreads_done = True
 
