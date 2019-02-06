@@ -18,11 +18,6 @@
 ## with this library; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-include(CMakeDependentOption)
-
-cmake_dependent_option(RTNEURON_USE_CUDA "Enable CUDA based features" ON
-                       "CUDA_FOUND" OFF)
-
 if(NOT RTNEURON_USE_CUDA OR NOT CUDA_FOUND)
   message(STATUS "Disable cuda, used ${RTNEURON_USE_CUDA}, found ${CUDA_FOUND}")
   return()
