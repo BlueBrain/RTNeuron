@@ -45,8 +45,6 @@ set(RTNEURON_DEB_DEPENDS ipython3 python3-numpy python3-dev python3-pyqt5
 
 set(COMMON_PROJECT_DOMAIN ch.epfl.bluebrain)
 
-option(RTNEURON_OPTIONAL_DEPS "Include optional dependencies" "OFF")
-
 include(Common)
 
 # External dependencies
@@ -86,6 +84,11 @@ common_find_package(ZeroEQ)
 common_find_package(GPUTests)
 
 common_find_package_post()
+
+include(CMakeDependentOption)
+option(RTNEURON_OPTIONAL_DEPS "Include optional dependencies" "OFF")
+cmake_dependent_option(RTNEURON_USE_CUDA "Enable CUDA based features" ON
+                       "CUDA_FOUND" OFF)
 
 # Library dependency names for pkgconfig (for those libraries that provide it)
 set(RTNEURON_DEPENDENT_LIBRARIES Brain Lunchbox vmmlib OpenSceneGraph)
