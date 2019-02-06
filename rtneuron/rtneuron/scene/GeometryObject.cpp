@@ -215,7 +215,7 @@ void GeometryObject::applyStyle(const SceneStylePtr& style)
         break;
     case Type::circles:
         extra.set("circles", true);
-    /* no break */
+    /* falls through */
     case Type::points:
         if (_geometry->getVertexArray()->getType() == osg::Array::Vec3ArrayType)
             extra.set("use_point_size_uniform", true);

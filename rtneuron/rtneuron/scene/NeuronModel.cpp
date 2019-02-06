@@ -113,7 +113,7 @@ public:
                            << ", ignoring this level of detail" << std::endl;
                     continue;
                 }
-            /* no break */
+            /* falls through */
             default:
             {
                 auto& neuron = data.neuron;
