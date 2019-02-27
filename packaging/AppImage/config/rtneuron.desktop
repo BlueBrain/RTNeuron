@@ -1,7 +1,8 @@
 [Desktop Entry]
 Type=Application
 Exec=rtneuron
-Name=rtneuron;
+Name=rtneuron
+Terminal=true
 Comment=Interactive visualization framework for geometrically detailed neuron simulations
 Categories=Science;
 Icon=rtneuron
