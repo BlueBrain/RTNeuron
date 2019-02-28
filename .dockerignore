@@ -1,0 +1,5 @@
+**/.git
+tests/python/img
+doc/img
+**/__pycache__
+**/*~

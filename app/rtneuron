@@ -141,7 +141,13 @@ Type help(app) on the console for additional details""")
         import traceback
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_tb(exc_traceback)
-    rtneuron.start_shell()
+
+    if sys.stdin.isatty():
+        rtneuron.start_shell()
+    else:
+        # Running the Qt even loop when there's no shell
+        rtneuron.app._gui._app.exec_()
+
     sys_exit()
 
 if options.config is None:
