@@ -1,12 +1,19 @@
 #!/bin/bash
 
 HERE="$(dirname "$(readlink -f "${0}")")"
+PYTHON=${HERE}/usr/bin/python3.7
 
 # C locale is used to avoid errors parsing floating point numbers
 # in locales that use decimal comma
-LC_NUMERIC=C \
-LD_LIBRARY_PATH=${HERE}/usr/lib:${HERE}/usr/lib/python3.7/site-packages/PyQt5/Qt/lib:$LD_LIBRARY_PATH \
-PYTHONHOME=${HERE}/usr \
-PYTHONPATH=${HERE}/usr/lib/python3.7/site-packages \
-QT_STYLE_OVERRIDE=Fusion \
-${HERE}/usr/bin/python3.7 ${HERE}/usr/bin/rtneuron $@
+export LC_NUMERIC=C
+export LD_LIBRARY_PATH=${HERE}/usr/lib:${HERE}/usr/lib/python3.7/site-packages/PyQt5/Qt/lib:$LD_LIBRARY_PATH
+export PYTHONHOME=${HERE}/usr
+export PYTHONPATH=${HERE}/usr/lib/python3.7/site-packages
+export QT_STYLE_OVERRIDE=Fusion
+
+
+if `$PYTHON -c 'import sys; exit(0) if sys.stdin.isatty() else exit(1)'`; then
+   $PYTHON $HERE/usr/bin/rtneuron $@
+else
+   $PYTHON $HERE/usr/bin/rtneuron --app $@
+fi
