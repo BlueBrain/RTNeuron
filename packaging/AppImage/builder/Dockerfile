@@ -5,8 +5,14 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
 # Needed to install libopenssl
 RUN yum -y swap -- remove fakesystemd -- install systemd systemd-libs
 RUN yum install -y yum-plugin-ovl
-RUN yum install -y zlib-devel bzip2 bzip2-devel flex bison git tar gcc gcc-c++ make mesa-libGL-devel libpng-devel libjpeg-turbo-devel libtiff-devel readline-devel sqlite-devel openssl-devel gdbm-devel libtool libffi-devel qt5-base-devel qt5-qtquickcontrols2-devel glew-devel turbojpeg-devel turbojpeg yum-plugin-ovl  gmp-devel mpfr-devel libmpc-devel
+RUN yum install -y zlib-devel bzip2 bzip2-devel flex bison git tar make mesa-libGL-devel libpng-devel libjpeg-tuqrbo-devel libtiff-devel readline-devel sqlite-devel openssl-devel gdbm-devel libffi-devel qt5-base-devel qt5-qtquickcontrols2-devel glew-devel turbojpeg-devel turbojpeg gmp-devel mpfr-devel cpp libgcc libstdc++-devel libgomp libmpc-devel kernel-headers yum-utils
 RUN yum update -y nss nss-util nspr curl
+
+# Installing gcc and some dependencies by hand to avoid a glibc update.
+RUN curl ftp://ftp.pbone.net/mirror/ftp.scientificlinux.org/linux/scientific/7.0/x86_64/os/Packages/glibc-headers-2.17-55.el7.x86_64.rpm -O && rpm -i /glibc-headers-2.17-55.el7.x86_64.rpm
+RUN curl ftp://ftp.pbone.net/mirror/ftp.scientificlinux.org/linux/scientific/7.0/x86_64/os/Packages/glibc-devel-2.17-55.el7.x86_64.rpm -O && rpm -i /glibc-devel-2.17-55.el7.x86_64.rpm
+RUN yumdownloader gcc gcc-c++ && rpm -i gcc-*rpm
+
 RUN yum clean all
 
 # GCC 5.4.0
