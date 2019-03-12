@@ -22,6 +22,7 @@
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import argparse
+import math
 import numpy as np
 import os
 import random
@@ -88,6 +89,9 @@ group.add_argument(
     "-m", "--mesh-path", type=str, default=".",
     metavar="path", help="The path to the directory containing the meshes.")
 group.add_argument(
+    "-t", "--mtypes", type=str, default=None, metavar="name", nargs="+",
+    help="The list of mtypes to be considered (all if not given)")
+group.add_argument(
     "-p", "--mesh-file-pattern", type=str, default="layer[1-6].ply",
     metavar="pattern", help="The regex pattern for the mesh files to load")
 group.add_argument(
@@ -136,6 +140,9 @@ group.add_argument(
     help="Image resolution, width and height will be computed depending on"
     " the slice size")
 group.add_argument(
+    "-u", "--up", type=float, default=None, nargs=3,
+    help="Up vector for the camera (automatically computed if not provided)")
+group.add_argument(
     "-w", "--width", type=int, default=None, metavar="pixels",
     help="Desired image width, the height will be computed automatically"
     "depending on the circuit. Takes precedence over --resolution")
@@ -144,9 +151,6 @@ group.add_argument(
 group.add_argument(
     "-b", "--background", type=float, default=[1, 1, 1, 1], nargs=4,
     metavar=("R", "G", "B", "A"), help="Background color")
-group.add_argument(
-    "-c", "--clip-neurons", default=False, action="store_true",
-    help="Whether neurons should also be clipped or not")
 group.add_argument(
     "-f", "--inflation-factor", type=float, default=0.5,
     metavar="microns", help="Inflation factor for neurons")
@@ -157,8 +161,7 @@ region_alpha = 0.2
 region_colors = [[1, 0, 0, region_alpha], [1, 0.5, 0, region_alpha],
                 [1, 1, 0, region_alpha],  [0.5, 1.0, 0, region_alpha],
                 [0, 0.5, 1.0, region_alpha], [0.5, 0, 1.0, region_alpha]]
-max_distance_from_mid_plane = 200
-desired_max_distance_from_mid_plane = 50
+max_distance_to_mid_plane = 50
 
 try:
     options = args_parser.parse_args(sys.argv[1:])
@@ -277,7 +280,10 @@ elif options.slice_from_volume:
     position, width = options.slice_from_volume
     clipping_planes = compute_slice_from_longitude(options.coord_volume,
                                                    position, width)
-else:
+elif "isocortex" in options.circuit_config.lower():
+    clipping_planes = [[0.96285, -0.2698, -0.00872, -4948],
+                       [-0.9628, 0.26986, 0.00871, 5148]]
+elif "s1" in options.circuit_config.lower():
     clipping_planes = [[0.9696, -0.02328, -0.2434, -2871],
                        [-0.9696, 0.02328, 0.2434, 3293]]
 
@@ -297,21 +303,24 @@ def compute_cell_mask(positions, planes):
         exit(-1)
     return inside
 
-def compute_axes(circuit_info, front):
+def compute_axes(circuit_info, front, up=None):
     """Compute the world location of the axes for the camera view to use for
        the collage and the bounding box of the given circuit in this reference
        frame."""
 
+    positions = circuit_info.positions
     transforms = circuit_info.transforms
 
-    # The up vector hint is computed as the average of the transformed y-axis of
-    # all the cells. The front vector is perpendicular to the clipping planes
-    y = np.array([0, 1, 0, 0])
-    mean = np.zeros((3))
-    for transform in transforms:
-        mean += np.dot(transform, y)[0:3]
-    up = mean / transforms.shape[0]
+    if up is None:
+        # The up vector hint is computed as the average of the transformed y-axis
+        # of all the cells. The front vector is perpendicular to the clipping
+        # planes
+        mean = np.zeros((3))
+        for u in circuit_info.apical_dirs:
+            mean += u
+        up = mean / transforms.shape[0]
     up /= np.linalg.norm(up)
+
     if np.dot(up, front) > 1 - 1e-5:
         # The first clipping plane is perpendicular to the up vector. In this
         # case It's not very clear what should be the best approach, so we pick
@@ -324,6 +333,7 @@ def compute_axes(circuit_info, front):
             front = np.array([-front[1], front[0], 0])
         front /= np.linalg.norm(front) # We need to renormalize
     right = np.cross(up, front)
+    right /= np.linalg.norm(right) # We need to renormalize
     up = np.cross(front, right)
 
     axes_to_world = np.zeros((3, 3))
@@ -332,6 +342,13 @@ def compute_axes(circuit_info, front):
     axes_to_world[2] = front
 
     return axes_to_world
+
+def project_vectors(vs, world_to_axes):
+  vs = np.dot(vs, world_to_axes)[:, 0:2]
+  # This numpy incantation normalizes all vectors at once, it computes per v
+  # magnitudes, coverts them into a column vector and performs v / magnitude(v)
+  # component-wise
+  return vs / np.sqrt((vs * vs).sum(axis=1))[..., np.newaxis]
 
 def render_inset(planes):
 
@@ -402,6 +419,9 @@ circuit_info.gids = all_gids
 circuit_info.positions = circuit.positions(all_gids)
 circuit_info.transforms = circuit.transforms(all_gids)
 circuit_info.mtypes = circuit.morphology_types(all_gids)
+# Computing apical directions
+circuit_info.apical_dirs = [np.dot(t, np.array([0, 1, 0, 0]))[0:3]
+                            for t in circuit_info.transforms]
 
 # Selecting the cells that are between the clipping planes.
 mask = compute_cell_mask(circuit_info.positions, clipping_planes)
@@ -414,17 +434,27 @@ circuit_info.mtypes = circuit_info.mtypes[mask]
 # Computing the gid sets for each morphology type
 mtype_names = circuit.morphology_type_names()
 msets = {}
-for name in mtype_names:
-    msets[name] = circuit_info.gids[circuit_info.mtypes == len(msets)]
+for (mtype, name) in enumerate(mtype_names):
+    if options.mtypes is not None and name not in options.mtypes:
+        continue
+    msets[name] = circuit_info.mtypes == mtype
 
 # Computing the camera placement.
-front_axis = clipping_planes[0][0:3]
-front_axis /= np.linalg.norm(front_axis)
-axes_to_world = compute_axes(circuit_info, front_axis)
+if clipping_planes is None:
+  front_axis = np.array([0, 0, -1])
+else:
+  front_axis = clipping_planes[0][0:3]
+  front_axis /= np.linalg.norm(front_axis)
 
-world_to_axes = np.linalg.inv(axes_to_world)
+# This matrix uses per-multiplication notation
+axes_to_world = compute_axes(circuit_info, front_axis, options.up)
+
+world_to_axes = np.transpose(axes_to_world)
 transformed = np.dot(circuit_info.positions, world_to_axes)
 circuit_info.transformed = transformed
+circuit_info.projected_apical_dirs = \
+    project_vectors(circuit_info.apical_dirs, world_to_axes)
+
 # The AABB is local to axes
 aabb = (np.min(transformed, axis=0), np.max(transformed, axis=0))
 
@@ -444,9 +474,7 @@ else:
     width = int((dendrite_aabb[1][0] - dendrite_aabb[0][0]) *
                 options.resolution)
 height = int((dendrite_aabb[1][1] - dendrite_aabb[0][1]) / um_per_pixel)
-
-# Minimum horizontal distance between cell somas in microns
-minimum_cell_distance = width / 10.0
+img_scale_factor = height / 1000.0
 
 # We first create a scene for the inset showing the meshes and the location
 # of the clipping planes
@@ -460,71 +488,80 @@ if options.inset is not None:
 
 rt.global_attributes.window_width = width
 rt.global_attributes.window_height = height
-scene_attr = rt.AttributeMap()
-scene_attr.inflatable_neurons = True
-scene_attr.use_meshes = False
-view = rt.display_empty_scene(scene_attributes=scene_attr,
-                              argv=['', '--eq-layout', 'Simple'])
-# We pause the rendering to avoid problems while updating the scene
-rt.engine.pause()
-view.attributes.background = options.background
-view.attributes.auto_compute_home_position = False
-view.attributes.auto_adjust_model_scale = False
-view.attributes.inflation_factor = 0.5
 
+def start_engine(background=options.background):
+    scene_attr = rt.AttributeMap()
+    scene_attr.inflatable_neurons = True
+    scene_attr.use_meshes = False
+    view = rt.display_empty_scene(scene_attributes=scene_attr,
+                                 argv=['', '--eq-layout', 'Simple'])
+    # We pause the rendering to avoid problems while updating the scene
+    rt.engine.pause()
+    view.attributes.background = background
+    view.attributes.auto_compute_home_position = False
+    view.attributes.auto_adjust_model_scale = False
+    view.attributes.inflation_factor = 0.5
+    return view
+
+def setup_camera(view):
+    front = axes_to_world[2]
+    up = axes_to_world[1]
+    eye = center + front * aabb[1][2] * 6
+    camera = view.camera
+    camera.setViewLookAt(eye, center, up)
+    camera.makeOrtho()
+    camera.setProjectionOrtho(dendrite_aabb[0][0], dendrite_aabb[1][0],
+                              dendrite_aabb[0][1], dendrite_aabb[1][1])
+    view.attributes.model_scale = 1
+
+def render_background():
+    print("Rendering background")
+    view = start_engine()
+    scene = view.scene
+
+    # Adding region meshes
+    for model, color in zip(mesh_models, region_colors):
+        scene.addModel(model, attributes=rt.AttributeMap({"color": color}))
+
+    rt.sceneops.enable_transparency(scene)
+    for i, plane in enumerate(clipping_planes):
+        scene.setClipPlane(i, plane)
+
+    # Adding the scale axis
+    def add_axes(corner, axes):
+        points = np.zeros((4, 3))
+        points[0] = corner
+        points[1] = corner + axes[1] * options.axes_length
+        points[2] = corner
+        points[3] = corner + axes[0] * options.axes_length
+        scene.addGeometry(points, [[0, 1], [2, 3]],
+                          colors=[[0, 0.5, 0, 1], [0, 0.5, 0, 1], [0.8, 0, 0, 1],
+                                  [0.8, 0, 0, 1]],
+                          attributes=rt.AttributeMap(
+                              {"line_width": img_scale_factor}))
+
+    axis_margin = um_per_pixel * img_scale_factor * 10
+    add_axes(np.dot(np.array([dendrite_aabb[0][0] + axis_margin,
+                              dendrite_aabb[0][1] + axis_margin, 0]),
+                    axes_to_world) + center, axes_to_world)
+
+    setup_camera(view)
+
+    rt.engine.resume()
+    view.snapshot("background.png")
+    del rt.engine
+
+render_background()
+
+# Restarting the engine to avoid issues with clipping planes
+print("Rendering m-types")
+view = start_engine([0, 0, 0, 0])
 scene = view.scene
 scene.circuit = circuit
-
-# Adding region meshes
-for model, color in zip(mesh_models, region_colors):
-    scene.addModel(model, attributes=rt.AttributeMap({"color": color}))
-
-rt.sceneops.enable_transparency(scene)
-for i, plane in enumerate(clipping_planes):
-    scene.setClipPlane(i, plane)
-
-# Adding the scale axis
-def add_axes(corner, axes):
-    points = np.zeros((4, 3))
-    points[0] = corner
-    points[1] = corner + axes[1] * options.axes_length
-    points[2] = corner
-    points[3] = corner + axes[0] * options.axes_length
-    scene.addGeometry(points, [[0, 1], [2, 3]],
-                      colors=[[0, 0.5, 0, 1], [0, 0.5, 0, 1], [0.8, 0, 0, 1],
-                              [0.8, 0, 0, 1]])
-
-add_axes(np.dot(np.array([dendrite_aabb[0][0] + um_per_pixel * 10,
-                          dendrite_aabb[0][1] + um_per_pixel * 10, 0]),
-                axes_to_world) + center, axes_to_world)
-
-### Front orthographic projection camera
-front = axes_to_world[2]
-up = axes_to_world[1]
-eye = center + front * aabb[1][2] * 6
-camera = view.camera
-camera.setViewLookAt(eye, center, up)
-camera.makeOrtho()
-camera.setProjectionOrtho(dendrite_aabb[0][0], dendrite_aabb[1][0],
-                          dendrite_aabb[0][1], dendrite_aabb[1][1])
-view.attributes.model_scale = 1
+setup_camera(view)
 rt.engine.resume()
-
-# If neuron clipping is not enabled we still have to clip the meshes. The
-# solution for the moment is to clip the meshes, take a snapshot of that
-# and then composite this background and with the unclip neurons.
-if not options.clip_neurons:
-    view.snapshot("background.png")
-    scene.clear()
-    # Ideally it should be possible to disable the transaprency, but doing so
-    # spits out OpenGL errors.
-    # rt.sceneops.disable_transparency(scene)
-
-# Iterating over the object handlers to display each mtype individually and
-# make a snapshot
-
-# Adding a scene object per mtype and taking the snapshot
-view.attributes.background = [0, 0, 0, 0]
+# Necessary for proper transparent background
+rt.sceneops.enable_transparency(scene)
 
 attributes = rt.AttributeMap()
 attributes.mode = rt.RepresentationMode.WHOLE_NEURON
@@ -532,66 +569,99 @@ attributes.primary_color = [1, 0, 0, 1]
 attributes.secondary_color = [0, 0.5, 1, 0.25]
 attributes.color_scheme = rt.ColorScheme.BY_BRANCH_TYPE
 
-def render_mtype_sample(name, gids, circuit_info, present, index):
+def render_mtype_sample(name, mask, circuit_info, present, image_index):
     """Render a subset of the cells given making sure none of them is part
     of the list in `present'. The cells picked are added to `present'.
 
     Parameters:
     - name: mtype name
-    - gids: candidate cell gids
+    - mask: mask of candidate cells on the circuit_info arrays
     - index: number of sample image or None
     - present: list of cells already added or shown in another sample for this
       mytpe.
     """
-    assert(len(gids) != 0)
-    permutation = np.array(range(len(gids)))
-    random.seed(index)
-    random.shuffle(permutation)
-    gids = np.array(gids)[permutation]
-    mtype = mtype_names.index(name)
-    mtypes = circuit_info.mtypes
-    rotated_positions = circuit_info.transformed[mtypes == mtype][permutation]
-    global_positions = circuit_info.positions[mtypes == mtype][permutation]
+    assert(any(mask))
 
-    inserted = {}
-    target = []
-    distance = desired_max_distance_from_mid_plane
-    # Adding up to cells_per_image cell making sure that they are not closer
-    # to each other less than a given minimum distance in the xy local plane
-    # and that they are not very far away from the mid plane. If no cell is
-    # found we repeat with a bigger distance.
-    while len(inserted) == 0 and distance < max_distance_from_mid_plane:
-        for gid, rotated, position in zip(gids, rotated_positions,
-                                          global_positions):
-            # converting position to something projectPoint can accept.
-            position = list(map(float, position))
-            pixel = np.array(view.camera.projectPoint(position)[0:2])
-            pixel[0] = (pixel[0] + 1) * width * 0.5
-            pixel[1] = (1 - pixel[1]) * height * 0.5
-            if gid in present:
+    # Finding the subset of cells which is not very far from the mid plane
+    # and respecting a miminum distance between the cells
+
+    # Sorting the cells left to right in camera space before selection
+    permutation = np.argsort(circuit_info.transformed[mask][:, 0])
+    indices = np.array(range(0, len(circuit_info.gids)))[mask][permutation]
+
+    # Filtering cells too far away from the midplane
+    mask = np.zeros((len(indices)), dtype=bool)
+    for i, index in enumerate(indices[image_index:]):
+        local_position = circuit_info.transformed[index]
+        mask[i] = abs(local_position[2] - local_center[2]) < \
+                 max_distance_to_mid_plane
+    indices = indices[mask]
+
+    def projected_cell_distance(index1, index2):
+        p1 = circuit_info.transformed[index1][0:2]
+        p2 = circuit_info.transformed[index2][0:2]
+        return np.linalg.norm(p2 - p1)
+
+    def select_with_min_distance(distance):
+        selection = []
+        for index in indices[image_index:]:
+
+            # Checking if the cell is too far away from the midplane
+            local_position = circuit_info.transformed[index]
+            if abs(local_position[2] - local_center[2]) > \
+               max_distance_to_mid_plane:
                 continue
-            if abs(rotated[2] - local_center[2]) > distance:
-                continue
+
             good = True
-            for i in inserted.values():
-                d = abs(pixel - i)
-                if d[0] < minimum_cell_distance:
+            for other_index in selection:
+                if projected_cell_distance(index, other_index) < distance:
                     good = False
                     break
             if good:
-                target.append(int(gid))
-                present.add(gid)
-                inserted[gid] = pixel
-            if len(inserted) >= options.cells_per_image:
-                break
-        distance += (max_distance_from_mid_plane -
-                     desired_max_distance_from_mid_plane) / 4
+                selection.append(index)
+        return selection
 
+    if len(indices) > options.cells_per_image:
+        # This is a binary search to find a minmum distance between cells that
+        # gives a number close to cells_per_image
+        distances = [0, projected_cell_distance(indices[0], indices[-1])]
+        selections = [indices, select_with_min_distance(distances[1])]
+
+        previous_distance = 0
+        while len(selections[0]) != len(selections[1]):
+            distance = (distances[0] + distances[1]) * 0.5
+            selection = select_with_min_distance(distance)
+            if (len(selection) == options.cells_per_image or
+                # Safety check to avoid infinite loops
+                distance == previous_distance):
+                selections[0] = selection
+                break
+            previous_distance = distance
+            end_point = 0 if len(selection) > options.cells_per_image else 1
+            selections[end_point] = selection
+            distances[end_point] = distance
+
+        indices = selections[0]
+
+    # Creating the target and list of coodinates for the annotations
+    target = []
+    pixels = []
+    for i in indices:
+        target.append(int(circuit_info.gids[i]))
+
+        # converting cell position to something projectPoint can accept.
+        position = list(map(float, circuit_info.positions[i]))
+        pixel = np.array(view.camera.projectPoint(position)[0:2])
+        pixel[0] = (pixel[0] + 1) * width * 0.5
+        pixel[1] = (1 - pixel[1]) * height * 0.5
+        pixels.append(pixel)
+
+    print("M-type: %s, %d cells" % (name, len(target)))
     handler = scene.addNeurons(target, attributes)
-    if index is None:
+    if image_index is None:
         filename = "%s.png" % name
     else:
-        filename = "%s.%d.png" % (name, index + 1)
+        filename = "%s.%d.png" % (name, image_index + 1)
     view.snapshot(filename)
 
     # To not rebuild the scene, which can take time due to the meshes,
@@ -599,29 +669,28 @@ def render_mtype_sample(name, gids, circuit_info, present, index):
     handler.attributes.mode = rt.RepresentationMode.NO_DISPLAY
     handler.update()
 
-    annotation_params =" -gravity SouthWest -pointsize 15 -annotate +36+10 '{0} um'".format(options.axes_length)
-    if index == 0 or index is None:
-        annotation_params += " -gravity NorthWest -pointsize 20  -annotate +10+10 '{0}'".format(name)
-    for gid, pixel in inserted.items():
+    annotation_params = " -gravity SouthWest -pointsize {0} -annotate +{1}+{0} '{2} um'".format(max(10, int(10 * img_scale_factor)), int(12 * img_scale_factor), options.axes_length)
+    if image_index == 0 or image_index is None:
+        annotation_params += " -gravity NorthWest -pointsize {0}  -annotate +{1}+{1} '{2}'".format(max(12, int(20 * img_scale_factor)), int(10) * img_scale_factor, name)
+    for gid, pixel in zip(target, pixels):
         annotation_params += " -gravity NorthWest -pointsize 12  -undercolor '#ffffff80' -annotate +{0}+{1} '{2}'".format(pixel[0], pixel[1] + 10, gid)
 
     call(shlex.split("convert {0} {1} {0}".format(
         filename, annotation_params)))
-    if not options.clip_neurons:
-        call(shlex.split("composite {0} background.png {0}".format(filename)))
+    call(shlex.split("composite {0} background.png {0}".format(filename)))
     if options.inset is not None:
         call(shlex.split(
           "composite inset.png -gravity SouthEast {0} {0}".format(
             filename)))
 
-for name, gids in sorted(msets.items()):
+for name, mask in sorted(msets.items()):
     present = set()
-    if len(gids) == 0:
+    if not any(mask):
         print("No cells of mtype " + name + " available in the slice")
         continue
 
     if options.images_per_mtype == 1:
-        render_mtype_sample(name, gids, circuit_info, present, None)
+        render_mtype_sample(name, mask, circuit_info, present, None)
     else:
         for i in range(options.images_per_mtype):
-            render_mtype_sample(name, gids, circuit_info, present, i)
+            render_mtype_sample(name, mask, circuit_info, present, i)
