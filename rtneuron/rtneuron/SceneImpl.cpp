@@ -681,7 +681,6 @@ void Scene::_Impl::clear()
         _masterSceneOperations->clear();
         /* And clear out subscenes. */
         _masterSceneOperations->push(std::make_shared<Clear>());
-        _masterSceneOperations->push(std::make_shared<ClearClipPlanes>());
     }
 
     const bool autoUpdate = getAttributes()("auto_update");
@@ -1352,7 +1351,11 @@ void Scene::_Impl::_clearSubScenes()
         return;
 
     for (const auto& i : _subScenes)
-        i.second.subScene->unmapDistributedObjects(_config);
+    {
+        auto& subscene = *i.second.subScene;
+        subscene.clearClipPlanes();
+        subscene.unmapDistributedObjects(_config);
+    }
 
     _subScenes.clear();
 }
