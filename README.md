@@ -46,3 +46,5 @@ ETH Board funding to the Blue Brain Project and Cajal Blue Brain (funded by
 the Spanish Ministerio de Ciencia, Innovación y Universidades). Partial
 funding has been furthermore provided by the European Union’s Horizon 2020
 research and innovation programme under grant agreement no.720270. (HBP SGA1).
+
+Copyright (c) 2021 Blue Brain Project/EPFL
