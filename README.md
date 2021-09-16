@@ -41,11 +41,14 @@ and outputs.
 ## About
 
 RTNeuron has been jointly developed by the EPFL Blue Brain Project and the
-Universidad Politécnica de Madrid. Main financial support was provided by the
-ETH Board funding to the Blue Brain Project and Cajal Blue Brain (funded by
+Universidad Politécnica de Madrid. Main financial support was provided by
+the Blue Brain Project (a research center of the École polytechnique fédérale
+de Lausanne, EPFL, from the Swiss government’s ETH Board of the Swiss Federal
+Institutes of Technology) and Cajal Blue Brain (funded by
 the Spanish Ministerio de Ciencia, Innovación y Universidades). Partial
 funding has been furthermore provided by the European Union’s Horizon 2020
 research and innovation programme under grant agreement no.720270. (HBP SGA1).
+
 
 ## License
 
