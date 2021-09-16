@@ -55,7 +55,7 @@ research and innovation programme under grant agreement no.720270. (HBP SGA1).
 RTNeuron is licensed under the GPLv3, unless noted otherwise, e.g., for external dependencies.
 See file GPL.txt for the full license.
 
-Copyright (c) 2006-2021, Blue Brain Project/EPFL and Universidad Politécnica de Madrid (UPM)
+Copyright (c) 2006-2021 Blue Brain Project/EPFL and Universidad Politécnica de Madrid (UPM)
 
 This library is free software; you can redistribute it and/or modify it under the terms of the
 GNU Lesser General Public License version 3 as published by the Free Software Foundation.
