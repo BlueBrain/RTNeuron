@@ -1,11 +1,13 @@
-Juan Hernando
-Stefan Eilemann
-Daniel Nachbaur
-Jafet Villafranca
-Cyrille Favreau
-Glendon Holst
-Raphael Dumusc
-Grigori Chevtchenko
-Adrien Devresse
-Luis Riquelme
-Pawel Podhajski
+Juan Bautista Hernando Vieites
+
+Grigori Chevtchenko (contributor)
+Adrien Devresse (contributor)
+Raphael Dumusc (contributor)
+Stefan Eilemann (contributor)
+Cyrille Favreau (contributor)
+Glendon Holst (contributor)
+Daniel Nachbaur (contributor)
+Judit Planas Carbonell (contributor)
+Pawel Jozef Podhajski (contributor)
+Luis Riquelme (contributor)
+Jafet Villafranca (contributor)
