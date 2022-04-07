@@ -38,7 +38,7 @@ find new issues which have not already been reported in
 already reported problem, please update the corresponding issue with your inputs
 and outputs.
 
-## About
+## Acknowledgment
 
 RTNeuron has been jointly developed by the EPFL Blue Brain Project and the
 Universidad Politécnica de Madrid. Main financial support was provided by
